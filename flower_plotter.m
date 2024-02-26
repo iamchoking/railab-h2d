@@ -1,16 +1,9 @@
-function flower_plotter (CONCEPT,ax,dyn,syn)
+function flower_plotter (CONCEPT,ax,dyn,syn,style)
 
-    REV_V_DECAY    = 0.5; %TODO move this
+    % if nargin < 1
+    % end
 
-    VELOCITY_SCALE = 5e-3; % 1m/s is drawn as VELOCITY_SCALEm in the plot
-    FORCE_SCALE    = 1e-3;   % 1N is drawn as FORCE_SCALEm in the plot
-    POWER_SCALE    = 1e-3;
-
-    if nargin < 1
-        % TODO
-    end
-
-    %% [STEP 3] Get representative calculations
+    %% Get representative calculations
     
     % Equation for calculating max. force / velocity given the direction in
     % task space (used later for power calculation)
@@ -20,8 +13,8 @@ function flower_plotter (CONCEPT,ax,dyn,syn)
     % for velocity flower (for any given direction theta_d)
     unit_q     = inv(dyn.J_full)*unit_d; %q1/q2 required to produce unit_d velocity
 
-    maxv_case1 = max([syn.a1dot_max/unit_q(1), -REV_V_DECAY*syn.a1dot_max/unit_q(1)]);
-    maxv_case2 = max([syn.a2dot_max/unit_q(2), -REV_V_DECAY*syn.a2dot_max/unit_q(2)]);
+    maxv_case1 = max([syn.a1dot_max/unit_q(1), -syn.rev_v_decay*syn.a1dot_max/unit_q(1)]);
+    maxv_case2 = max([syn.a2dot_max/unit_q(2), -syn.rev_v_decay*syn.a2dot_max/unit_q(2)]);
     maxv_d_syn = subs(min([maxv_case1 ;maxv_case2]),syn); %(symbolic) maximum speed toward given direction
     
     % for force flower (interplolate btw. 4 vertices)
@@ -74,7 +67,7 @@ function flower_plotter (CONCEPT,ax,dyn,syn)
     plot_points = [plot_origin plot_origin+joint_points];
 
     if(CONCEPT(2) == "-")
-        v_inputs = border_inputs(syn.a1dot_max,-REV_V_DECAY * syn.a1dot_max,syn.a2dot_max,-REV_V_DECAY * syn.a2dot_max,num_points);
+        v_inputs = border_inputs(syn.a1dot_max,-syn.rev_v_decay * syn.a1dot_max,syn.a2dot_max,-syn.rev_v_decay * syn.a2dot_max,num_points);
         f_inputs = border_inputs(syn.taua1_max,0,syn.taua2_max,0,num_points);
     elseif(CONCEPT(2) == "+")
         v_inputs = border_inputs(syn.a1dot_max,-syn.a1dot_max,syn.a2dot_max,-syn.a2dot_max,num_points);
@@ -136,7 +129,7 @@ function flower_plotter (CONCEPT,ax,dyn,syn)
         p_borders(:,i_f+num_points)    = unit*angle_p;
         angles(i_f + num_points)       = angle;
         % v_borders(:,i_f+num_points)    = unit*angle_v;
-        % disp(power_points(:,i_f+num_points))
+        % disp(p_points(:,i_f+num_points))
 
         if angle_p > maxp_p
             maxp_p = angle_p;
@@ -165,68 +158,58 @@ function flower_plotter (CONCEPT,ax,dyn,syn)
     % flowers
     % scale into "~_points"
     
-    velocity_points = VELOCITY_SCALE*[v_borders v_borders(:,1)] + plot_points(:,end);
-    force_points    = FORCE_SCALE   *[f_borders f_borders(:,1)] + plot_points(:,end);
-    power_points    = POWER_SCALE   *[p_borders p_borders(:,1)] + plot_points(:,end);
+    v_points = style.vScale*[v_borders v_borders(:,1)] + plot_points(:,end);
+    f_points = style.fScale   *[f_borders f_borders(:,1)] + plot_points(:,end);
+    p_points = style.pScale   *[p_borders p_borders(:,1)] + plot_points(:,end);
     
-    plot(velocity_points(1,:),velocity_points(2,:),"red")
-    plot(force_points(1,:),force_points(2,:),"green")
-    plot(power_points(1,:),power_points(2,:),"blue")
-    % power_points
+    plot(v_points(1,:),v_points(2,:),'Color',style.vColor)
+    plot(f_points(1,:),f_points(2,:),'Color',style.fColor)
+    plot(p_points(1,:),p_points(2,:),'Color',style.pColor)
+    % p_points
     
     % TODO
     % annotation for max p/v/f stats
     % maxv
-    maxv_unit = [cos(maxv_ang);sin(maxv_ang)]
-    maxv_points = [plot_points(:,end) VELOCITY_SCALE*maxv_v*maxv_unit + plot_points(:,end) FORCE_SCALE*maxv_f*maxv_unit + plot_points(:,end) POWER_SCALE*maxv_p*maxv_unit + plot_points(:,end)];
-    plot(maxv_points(1,:),maxv_points(2,:),"red");
-    scatter(maxv_points(1,2:end),maxv_points(2,2:end),"red");
-    text(maxv_points(1,2),maxv_points(2,2),"\leftarrow" + sprintf("v_{maxv}: %0.3f m/s" ,maxv_v),'Color','red');
-    text(maxv_points(1,3),maxv_points(2,3),"\leftarrow" + sprintf("f_{maxv}: %0.3f N"   ,maxv_f),'Color','green');
-    maxv_flag = text(maxv_points(1,4),maxv_points(2,4),"\leftarrow" + sprintf("p_{maxv}: %0.3f Nm/s",maxv_p),'Color','blue');
+    maxv_unit = [cos(maxv_ang);sin(maxv_ang)];
+    maxv_points = [plot_points(:,end) style.vScale*maxv_v*maxv_unit + plot_points(:,end) style.fScale*maxv_f*maxv_unit + plot_points(:,end) style.pScale*maxv_p*maxv_unit + plot_points(:,end)];
+    plot(maxv_points(1,:),maxv_points(2,:),'Color',style.vColor);
+    scatter(maxv_points(1,2:end),maxv_points(2,2:end),'Color',style.vColor);
+    text(maxv_points(1,2),maxv_points(2,2),"\leftarrow" + sprintf("v_{maxv}: %0.3f m/s" ,maxv_v),'Color',style.vColor);
+    % text(maxv_points(1,3),maxv_points(2,3),"\leftarrow" + sprintf("f_{maxv}: %0.3f N"   ,maxv_f),'Color',style.fColor);
+    % text(maxv_points(1,4),maxv_points(2,4),"\leftarrow" + sprintf("p_{maxv}: %0.3f Nm/s",maxv_p),'Color',style.pColor);
 
     % maxf
-    maxf_unit = [cos(maxf_ang);sin(maxf_ang)]
-    maxf_points = [plot_points(:,end) VELOCITY_SCALE*maxf_v*maxf_unit + plot_points(:,end) FORCE_SCALE*maxf_f*maxf_unit + plot_points(:,end) POWER_SCALE*maxf_p*maxf_unit + plot_points(:,end)];
-    plot(maxf_points(1,:),maxf_points(2,:),"green");
-    scatter(maxf_points(1,2:end),maxf_points(2,2:end),"green");
-    text(maxf_points(1,2),maxf_points(2,2),"\leftarrow" + sprintf("v_{maxf}: %0.3f m/s" ,maxf_v),'Color','red');
-    text(maxf_points(1,3),maxf_points(2,3),"\leftarrow" + sprintf("f_{maxf}: %0.3f N"   ,maxf_f),'Color','green');
-    maxf_flag = text(maxf_points(1,4),maxf_points(2,4),"\leftarrow" + sprintf("p_{maxf}: %0.3f Nm/s",maxf_p),'Color','blue');
+    maxf_unit = [cos(maxf_ang);sin(maxf_ang)];
+    maxf_points = [plot_points(:,end) style.vScale*maxf_v*maxf_unit + plot_points(:,end) style.fScale*maxf_f*maxf_unit + plot_points(:,end) style.pScale*maxf_p*maxf_unit + plot_points(:,end)];
+    plot(maxf_points(1,:),maxf_points(2,:),'Color',style.fColor);
+    scatter(maxf_points(1,2:end),maxf_points(2,2:end),'Color',style.fColor);
+    % text(maxf_points(1,2),maxf_points(2,2),"\leftarrow" + sprintf("v_{maxf}: %0.3f m/s" ,maxf_v),'Color',style.vColor);
+    text(maxf_points(1,3),maxf_points(2,3),"\leftarrow" + sprintf("f_{maxf}: %0.3f N"   ,maxf_f),'Color',style.fColor);
+    % text(maxf_points(1,4),maxf_points(2,4),"\leftarrow" + sprintf("p_{maxf}: %0.3f Nm/s",maxf_p),'Color',style.pColor);
 
 
     % maxp
-    maxp_unit = [cos(maxp_ang);sin(maxp_ang)]
-    maxp_points = [plot_points(:,end) VELOCITY_SCALE*maxp_v*maxp_unit + plot_points(:,end) FORCE_SCALE*maxp_f*maxp_unit + plot_points(:,end) POWER_SCALE*maxp_p*maxp_unit + plot_points(:,end)];
+    maxp_unit = [cos(maxp_ang);sin(maxp_ang)];
+    maxp_points = [plot_points(:,end) style.vScale*maxp_v*maxp_unit + plot_points(:,end) style.fScale*maxp_f*maxp_unit + plot_points(:,end) style.pScale*maxp_p*maxp_unit + plot_points(:,end)];
 
-    if(maxp_ang == maxv_ang || maxp_ang == maxf_ang)
-        
+    if(maxp_ang == maxv_ang)
+        text(maxp_points(1,3),maxp_points(2,3),"\leftarrow" + sprintf("f_{maxp}: %0.3f N"   ,maxp_f),'Color',style.fColor);
+    elseif(maxp_ang == maxf_ang)
+        text(maxp_points(1,2),maxp_points(2,2),"\leftarrow" + sprintf("v_{maxp}: %0.3f m/s" ,maxp_v),'Color',style.vColor);
     else
-        plot(maxp_points(1,:),maxp_points(2,:),"blue");
-        scatter(maxp_points(1,2:end),maxp_points(2,2:end),"blue");
-        text(maxp_points(1,2),maxp_points(2,2),"\leftarrow" + sprintf("v_{maxp}: %0.3f m/s" ,maxp_v),'Color','red');
-        text(maxp_points(1,3),maxp_points(2,3),"\leftarrow" + sprintf("f_{maxp}: %0.3f N"   ,maxp_f),'Color','green');
-        text(maxp_points(1,4),maxp_points(2,4),"\leftarrow" + sprintf("p_{maxp}: %0.3f Nm/s",maxp_p),'Color','blue');
+        plot(maxp_points(1,:),maxp_points(2,:),'Color',style.pColor);
+        scatter(maxp_points(1,2:end),maxp_points(2,2:end),'Color',style.pColor);
+        text(maxp_points(1,2),maxp_points(2,2),"\leftarrow" + sprintf("v_{maxp}: %0.3f m/s" ,maxp_v),'Color',style.vColor);
+        text(maxp_points(1,3),maxp_points(2,3),"\leftarrow" + sprintf("f_{maxp}: %0.3f N"   ,maxp_f),'Color',style.fColor);
     end
 
-    text(maxp_points(1,4),maxp_points(2,4),"Max P \rightarrow",'Color','blue','HorizontalAlignment','right',"FontWeight","bold");
+    text(maxp_points(1,4),maxp_points(2,4),"\leftarrow" + sprintf("p_{maxp}: %0.3f Nm/s",maxp_p),'Color',style.pColor);
+    text(maxp_points(1,4),maxp_points(2,4),"Max P \rightarrow",'Color',style.pColor,'HorizontalAlignment','right',"FontWeight","bold");
 
 
     % add annotation for antagonistic force (and its percentage wrt max force)
-    fant_points = [plot_points(:,end) FORCE_SCALE*fant_vec + plot_points(:,end)];
-    plot(fant_points(1,:),fant_points(2,:),"black");
+    fant_points = [plot_points(:,end) style.fScale*fant_vec + plot_points(:,end)];
+    plot(fant_points(1,:),fant_points(2,:),'black');
     text(fant_points(1,2),fant_points(2,2),"\leftarrow" + sprintf("f_{ant}: %0.3f N"   ,norm(fant_vec)),'Color','black')
     
-    % plot_vec = FORCE_SCALE*subs([f0_syn f1_syn f2_syn fmax_syn],syn);
-    % plot_ox = plot_points(1,end)*ones(1,size(plot_vec,2));
-    % plot_oy = plot_points(2,end)*ones(1,size(plot_vec,2));
-    % if(CONCEPT(2) == '+')
-    %     plot(ax,[plot_ox; plot_vec(1,:)+plot_ox],[plot_oy; plot_vec(2,:)+plot_oy],'green');
-    % elseif(CONCEPT(2) == '-')
-    %     plot(ax,[plot_ox(2:end); plot_vec(1,2:end)+plot_ox(2:end)],[plot_oy(2:end); plot_vec(2,2:end)+plot_oy(2:end)],'green');
-    %     plot(ax,[plot_ox(1);plot_vec(1,1)+plot_ox(1)],[plot_oy(1);plot_vec(2,1)+plot_oy(1)],'black');
-    % end
-    % pbaspect(ax,[1 1 1])
-    % daspect(ax,[1 1 1])
-    % hold off
 end

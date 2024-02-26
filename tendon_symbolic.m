@@ -3,7 +3,7 @@ function dyn = tendon_symbolic(CONCEPT,syn)
     % clear
     
     if nargin < 1
-        CONCEPT = 'C-';
+        CONCEPT = 'C'; %plus or minus doesn't matter here.
     end
 
     if nargin < 2
