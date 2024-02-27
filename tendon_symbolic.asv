@@ -13,12 +13,13 @@ function dyn = tendon_symbolic(syn,override_concept)
         CONCEPT = override_concept;
     end
     
+    disp("[TENDON-SYMBOLIC] Solving Symbolic Dynamics for Concept ["+C_LETTER+')
+
     if(abs(CONCEPT) == 1)
         C_LETTER = "B";
     else
         C_LETTER = "C";
     end
-    disp("[TENDON-SYMBOLIC] Solving Symbolic Dynamics for Concept ["+C_LETTER+"]");
 
     %% Basic Geometry (symbolic)
         
@@ -292,10 +293,6 @@ function dyn = tendon_symbolic(syn,override_concept)
     % getting resulting joint tauth in fd&id situations
     id2_fxfy_tauth = transpose(J_th_v)*[fx;fy;nz];
     fd2_tauq_tauth = subs(id2_fxfy_tauth,f(1:2),fd12_tauq_fxfy);
-
-    disp("[TENDON-SYMBOLIC] Symbolic Dynamics Solved ("+C_LETTER+")");
-
-
 end
     
 

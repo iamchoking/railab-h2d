@@ -1,4 +1,4 @@
-function flower_plotter (CONCEPT,ax,dyn,syn,style)
+function flower_plotter (ax,dyn,syn,style)
 
     % if nargin < 1
     % end
@@ -25,7 +25,7 @@ function flower_plotter (CONCEPT,ax,dyn,syn,style)
     directed_id_eqn_syn = subs(dyn.id_fxfy_taua,{'fx','fy'},{maxf_d*unit_d(1),maxf_d*unit_d(2)}) == taua;
     % directed_fd_eqn_syn = dyn.fd_taua_fxfy == maxf_d*unit_d;
     
-    if (CONCEPT(2) == '-')
+    if (syn.concept > 0)
         case1max_sol   = solve(subs(directed_id_eqn_syn,taua1,syn.taua1_max),[maxf_d,taua2]);
         case1zero_sol  = solve(subs(directed_id_eqn_syn,taua1,0),[maxf_d,taua2]);
         % since these 2 cases are parallel, one of the maxf_d solutions have to
@@ -36,7 +36,7 @@ function flower_plotter (CONCEPT,ax,dyn,syn,style)
         
         maxf_d_syn = simplify(subs(min([max([case1max_sol.maxf_d,case1zero_sol.maxf_d]),max([case2max_sol.maxf_d,case2zero_sol.maxf_d])]),syn));
 
-    elseif(CONCEPT(2) == '+')
+    elseif(syn.concept < 0)
         % TODO
     end
 
@@ -66,10 +66,10 @@ function flower_plotter (CONCEPT,ax,dyn,syn,style)
     % plot_points = [plot_origin plot_p1 plot_p2 plot_p3];
     plot_points = [plot_origin plot_origin+joint_points];
 
-    if(CONCEPT(2) == "-")
+    if(syn.concept > 0)
         v_inputs = border_inputs(syn.a1dot_max,-syn.rev_v_decay * syn.a1dot_max,syn.a2dot_max,-syn.rev_v_decay * syn.a2dot_max,num_points);
         f_inputs = border_inputs(syn.taua1_max,0,syn.taua2_max,0,num_points);
-    elseif(CONCEPT(2) == "+")
+    elseif(syn.concept < 0)
         v_inputs = border_inputs(syn.a1dot_max,-syn.a1dot_max,syn.a2dot_max,-syn.a2dot_max,num_points);
         f_inputs = border_inputs(syn.taua1_max,-syn.taua1_max,syn.taua2_max,-syn.taua2_max,num_points);
     end

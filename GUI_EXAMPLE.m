@@ -33,7 +33,9 @@ function robot_dynamics_gui
         'Position', [150, 100, 150, 20], 'Callback', @updatePlot);
 
     % Function to update plot
-    function updatePlot(~, ~)
+    function updatePlot(control,action)
+        % disp(get(control))
+        % disp(action.Source)
         % Get current values from sliders
         gear_ratio = get(gearSlider, 'Value');
         pulley_diameter = get(pulleySlider, 'Value');

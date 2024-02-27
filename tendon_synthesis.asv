@@ -102,7 +102,15 @@ daspect(ax_plot,[1 1 1])
 %     'Value', pulley_diameter, 'Position', [150, 170, 300, 20], 'Callback', @updatePlot);
 ui_input = struct();
 for i=1:length(var_names)
-    ui_input.var_names(i) = uicontrol('Style','slider','Min',var_min(i),'Max',var_max(i),'Value',syn.(var_names(i)),'Position',[20 100-20*i 150 20],'Callback',@updatesyn);
+    ui_input.var_names(i) = uicontrol('Style','slider','Min',var_min(i),'Max',var_max(i),'Value',syn.(var_names(i)),'Position',[20 20 60 20],'Callback',@updatesyn);
+end
+
+function updatesyn(~,~)
+    for i=1:length(var_names)
+        syn.(var_names(i)) = get(ui_input.(var_names(i)),'Value');
+    end
+
+    show_setup(ax_setup,)
 end
 
 %% show setup
@@ -125,14 +133,4 @@ end
 %% Calculate and plot
 for i = 1:numel(pos_inputs(1,:))
     flower_plotter(ax_plot,dyns(i),syn,style);
-end
-
-function updatesyn(control,action)
-    disp(get(control))
-    disp(get(action))
-    for i=1:length(var_names)
-        syn.(var_names(i)) = get(ui_input.(var_names(i)),'Value');
-    end
-
-    show_setup(ax_setup,syn,style);
 end
