@@ -8,12 +8,18 @@ function dyn = get_dyn(predyn,syn,pos_input)
     invkin_eqns = simplify(subs([predyn.forw_q_pos(1:2) == pos_input],syn));
     % disp(invkin_eqns)
     % disp(syn)
-    syms q1 q2
-    q = [q1;q2];
-    q_sol   = vpasolve(invkin_eqns,[q1,q2],[0,q1_max;-q2_max*0.5,q2_max]);
-    q_syn   = [q_sol.q1;q_sol.q2];
-    
-    
+    if(sum(pos_input == [0;syn.l1+syn.l2+syn.l3]) == 2)
+        % special case (full extension)
+        q_syn = [0;0];
+        singular = true;
+        disp("[DYN] **This position is full-extension")
+    else
+        syms q1 q2
+        q = [q1;q2];
+        q_sol   = vpasolve(invkin_eqns,[q1,q2],[0,q1_max;-q2_max*0.5,q2_max]);
+        q_syn   = [q_sol.q1;q_sol.q2];
+    end
+
     % q sets the rest of the variables
     a_syn   = simplify(subs(subs(predyn.inv0_q_a  ,syn),q,q_syn)); %motor position in rad
     th_syn  = simplify(subs(subs(predyn.forw1_q_th,syn),q,q_syn));
@@ -30,11 +36,25 @@ function dyn = get_dyn(predyn,syn,pos_input)
     
     % substitute constraints / obtain full dynamics
     dyn.J_fing         = double(simplify(subs(predyn.J_fing,syn)));
+    % disp(dyn.J_fing);
+    if(det(dyn.J_fing) == 0)
+        disp("[DYN] ! Singular Solution. Skipping forward dynamics calculation")
+        singular = true;
+    else
+        singular = false;
+    end
     dyn.J_full         = double(simplify(subs(predyn.J_full,syn)));
     dyn.id12_fxfy_tauq = simplify(subs(predyn.id12_fxfy_tauq,syn));
     dyn.id_fxfy_taua   = simplify(subs(predyn.id_fxfy_taua,syn));
-    dyn.fd_taua_fxfy   = simplify(subs(predyn.fd_taua_fxfy,syn));
     dyn.forw_joint_pos = simplify(subs(predyn.forw_joint_pos,syn));
+    dyn.tauq_ant       = simplify(subs(predyn.tauq_ant,syn));
+
+    dyn.singular       = singular;
+    if(singular) %singular solutions have diverging forward dynamics
+        dyn.fd_taua_fxfy   = 0;
+    else
+        dyn.fd_taua_fxfy   = simplify(subs(predyn.fd_taua_fxfy,syn));
+    end
 
 end
 

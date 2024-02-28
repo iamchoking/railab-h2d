@@ -100,9 +100,6 @@ function dyn = tendon_symbolic(syn,override_concept)
     
     forw2_th_pos = [forw2_sol.x;forw2_sol.y;forw2_sol.theta];
     
-    % (unsolvable)
-    % kin_eqs = [x == forw_q_pos(1),y == forw_q_pos(2)]
-    % inv_kin_full = solve(kin_eqs,[q1 q2])
     
     %% Full Forward Kinematics (q (, del) / a -> position)
     forw_q_pos = subs(forw2_th_pos,th,forw1_q_th);
@@ -241,7 +238,7 @@ function dyn = tendon_symbolic(syn,override_concept)
     % for the "coupler (string x)" tension
     dyn_taux = 1/rxd*(r1d*tauq1+norm(cross([l3*s123;l3*c123;0],[fx;fy;0])));
 
-    dyn.f_ant = simplify(subs(f_ant,syn));
+    dyn.f_ant    = simplify(subs(f_ant,syn));
     dyn.tauq_ant = simplify(subs(tauq_ant,syn));
     
     %% Forward Dynamics 0 (taua -> tauq) (th2 needs to be supplied)

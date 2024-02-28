@@ -18,23 +18,23 @@ function show_flower(ax,calc,style)
     % p_points
     
     % annotation for max p/v/f stats
-    % maxv
+    % maxv situation
     maxv_unit = [cos(calc.maxv_ang);sin(calc.maxv_ang)];
     maxv_points = [calc.plot_points(:,end) style.vScale*calc.maxv_v*maxv_unit + calc.plot_points(:,end) style.fScale*calc.maxv_f*maxv_unit + calc.plot_points(:,end) style.pScale*calc.maxv_p*maxv_unit + calc.plot_points(:,end)];
     plot(ax,maxv_points(1,:),maxv_points(2,:),'Color',style.vColor);
     scatter(ax,maxv_points(1,2:end),maxv_points(2,2:end),'Color',style.vColor);
     text(ax,maxv_points(1,2),maxv_points(2,2),"\leftarrow" + sprintf("v_{maxv}: %0.3f m/s" ,calc.maxv_v),'Color',style.vColor);
-    % text(ax,maxv_points(1,3),maxv_points(2,3),"\leftarrow" + sprintf("f_{maxv}: %0.3f N"   ,calc.maxv_f),'Color',style.fColor);
-    % text(ax,maxv_points(1,4),maxv_points(2,4),"\leftarrow" + sprintf("p_{maxv}: %0.3f Nm/s",calc.maxv_p),'Color',style.pColor);
+    text(ax,maxv_points(1,3),maxv_points(2,3),"\leftarrow" + sprintf("f_{maxv}: %0.3f N"   ,calc.maxv_f),'Color',style.fColor);
+    text(ax,maxv_points(1,4),maxv_points(2,4),"\leftarrow" + sprintf("p_{maxv}: %0.3f Nm/s",calc.maxv_p),'Color',style.pColor);
 
     % maxf
     maxf_unit = [cos(calc.maxf_ang);sin(calc.maxf_ang)];
     maxf_points = [calc.plot_points(:,end) style.vScale*calc.maxf_v*maxf_unit + calc.plot_points(:,end) style.fScale*calc.maxf_f*maxf_unit + calc.plot_points(:,end) style.pScale*calc.maxf_p*maxf_unit + calc.plot_points(:,end)];
     plot(ax,maxf_points(1,:),maxf_points(2,:),'Color',style.fColor);
     scatter(ax,maxf_points(1,2:end),maxf_points(2,2:end),'Color',style.fColor);
-    % text(ax,maxf_points(1,2),maxf_points(2,2),"\leftarrow" + sprintf("v_{maxf}: %0.3f m/s" ,calc.maxf_v),'Color',style.vColor);
+    text(ax,maxf_points(1,2),maxf_points(2,2),"\leftarrow" + sprintf("v_{maxf}: %0.3f m/s" ,calc.maxf_v),'Color',style.vColor);
     text(ax,maxf_points(1,3),maxf_points(2,3),"\leftarrow" + sprintf("f_{maxf}: %0.3f N"   ,calc.maxf_f),'Color',style.fColor);
-    % text(ax,maxf_points(1,4),maxf_points(2,4),"\leftarrow" + sprintf("p_{maxf}: %0.3f Nm/s",calc.maxf_p),'Color',style.pColor);
+    text(ax,maxf_points(1,4),maxf_points(2,4),"\leftarrow" + sprintf("p_{maxf}: %0.3f Nm/s",calc.maxf_p),'Color',style.pColor);
 
 
     % maxp

@@ -1,7 +1,6 @@
 %% Pre-setting constants
 % putting in constants
 syn = struct();
-
 % [syn.concept,syn.actuation] = deal(1,1);
 [syn.concept,syn.actuation] = deal(2,1);
 % concept: 1: B -1: B (closed loop) 2: C -2: C (closed loop)
@@ -41,13 +40,12 @@ else
 end
 
 %% Designating variables (must be a part of "syn")
-var_names   = ["r1m"    "r1p"   "taua1_max"];
-var_min     = [5*1e-3   5*1e-3  5*1e-3     ];
-var_max     = [15*1e-3  10*1e-3 10e-3      ];
-var_default = [5.1*1e-3 8*1e-3  5.93e-3    ];
-
+var_names   = ["r1m"    "r1p"   "r1d"   "r2m"   "taua1_max" "taua2_max"];
+var_min     = [5*1e-3   5*1e-3  5*1e-3  5*1e-3  5*1e-3      5*1e-3     ];
+var_max     = [15*1e-3  13*1e-3 10*1e-3 15*1e-3  10e-3       10e-3      ];
+var_default = zeros(1,length(var_names));
 for i = 1:length(var_names)
-    syn.(var_names(i)) = var_default(i);
+     var_default(i) = syn.(var_names(i));
 end
 
 
@@ -61,7 +59,7 @@ style = struct();
 [style.plot_lim,style.setup_lim] = deal([[-40 150];[-40 120]]*1e-3,[[-25 25];[-25 120]]*1e-3);
 
 %% PRE-SETTING evaluation positions
-pts = [[34;104] [65;80] [70;20] [10;-20]] * 1e-3;
+pts = [[0;110] [34;104] [65;80] [70;20] [10;-20]] * 1e-3;
 
 %% Preliminary Calculations (run only once per session) (takes long)
 
@@ -79,7 +77,7 @@ ui = struct();
 
 ui.fig = uifigure('Name', 'Finger Dynamics GUI','Position',[150 100 1600 900]);
 ui.g_fig   = uigridlayout(ui.fig);
-ui.g_fig.RowHeight = {'16x','3x','1x'};
+ui.g_fig.RowHeight = {'16x','2x','1x','1x'};
 ui.g_fig.ColumnWidth = {'3x','2x','16x','3x'};
 ui.g_fig.RowSpacing = 5;
 ui.g_fing.ColumnSpacing = 5;
@@ -96,7 +94,7 @@ daspect(ui.ax_setup,[1 1 1])
 
 % plot axes (shows flowers, etc)
 ui.ax_plot = uiaxes(ui.g_fig);
-ui.ax_plot.Layout.Row = [1 3];
+ui.ax_plot.Layout.Row = [1 4];
 ui.ax_plot.Layout.Column = 3;
 % set(ui.ax_plot.Title,'String',"CONCEPT ["+syn.concept+"]");
 % pbaspect(ui.ax_plot,[2 1 1])
@@ -112,7 +110,7 @@ daspect(ui.ax_plot,[1 1 1])
 % ui: sliders (adjust syn variables)
 ui.p_syn = uipanel(ui.g_fig,'Title','Synthesis Variables');
 ui.p_syn.Scrollable = 'on';
-ui.p_syn.Layout.Row = [2 3];
+ui.p_syn.Layout.Row = [2 4];
 ui.p_syn.Layout.Column = 1;
 ui.g_syn = uigridlayout(ui.p_syn);
 ui.g_syn.RowHeight = {35,35,35,35,35,35};
@@ -141,7 +139,7 @@ end
 % ui: discrete variables
 ui.p_discr = uipanel(ui.g_fig,'Title','Discrete Param.');
 ui.p_discr.Scrollable = 'on';
-ui.p_discr.Layout.Row = 2;
+ui.p_discr.Layout.Row = [2 3];
 ui.p_discr.Layout.Column = 2;
 ui.g_discr = uigridlayout(ui.p_discr);
 ui.g_discr.RowHeight = {35,35,35,35,35,35};
@@ -154,7 +152,11 @@ ui.discr = struct();
 
 % concept selector (TODO make this better)
 ui.discr.concept = uidropdown(ui.g_discr,"Items",["B+","C+"],"ValueChangedFcn",@(src,event)updatesyn(src,event,"concept"));
-ui.discr.concept.Value = "C+";
+if(syn.concept == 1)
+    ui.discr.concept.Value = "B+";
+else
+    ui.discr.concept.Value = "C+";
+end
 ui.discr.concept.Layout.Row = 1;
 ui.discr.concept.Layout.Column = 2;
 ui.discr.concept_lbl = uilabel(ui.g_discr);
@@ -164,7 +166,7 @@ ui.discr.concept_lbl.Layout.Column = 1;
 
 % SOLVE
 ui.solve = uibutton(ui.g_fig,"Text","Solve >>","ButtonPushedFcn",@updatesol);
-ui.solve.Layout.Row = 3;
+ui.solve.Layout.Row = 4;
 ui.solve.Layout.Column = 2;
 
 % OUTPUTS
@@ -192,14 +194,19 @@ ui.g_vis.Scrollable = 'on';
 ui.g_vis.RowSpacing = 0;
 ui.g_vis.ColumnSpacing = 0;
 
-% populate setup
+% ui: save
+ui.save = uibutton(ui.g_fig,'Text','Save',"ButtonPushedFcn",@(src,event) uisave);
+drawnow;
+
 show_setup(ui.ax_setup,syn,style);
+show_flowers(ui.ax_plot,calcs,style)
 
 %% Initial Population
 show_setup(ui.ax_setup,syn,style);
-dyns = get_dyns(predyn_B,predyn_C,syn,pts);
-calcs = calc_flowers(dyns,syn);
-show_flowers(ui.ax_plot,calcs,style);
+updatesol(0,0);
+% dyns = get_dyns(predyn_B,predyn_C,syn,pts);
+% calcs = calc_flowers(dyns,syn);
+% show_flowers(ui.ax_plot,calcs,style);
 %% Member functions
 
 % get full dynamics from input positions
@@ -214,7 +221,7 @@ function dyns = get_dyns(predyn_B,predyn_C,syn,pts)
     
     dyns = [];
     for i = 1:length(pts(1,:))
-        disp("[DYNS] Solving for point "+strjoin(string(pts(:,i))));
+        disp("[DYNS] Solving for point ["+strjoin(string(pts(:,i))) + "]");
         dyns = [dyns get_dyn(predyn,syn,pts(:,i))];
     end
     disp("[GET-DYNS] Done.")
@@ -268,4 +275,8 @@ function updatesol(~,~)
 end
 
 function updatestyle(~,event,name)
+end
+
+function uisave(~,~)
+    evalin('base','exportgraphics(ui.fig,"test.pdf")')
 end

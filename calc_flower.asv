@@ -14,11 +14,8 @@ function calc = calc_flower (dyn,syn)
         sing_id_fxfy_taua = subs(dyn.id_fxfy_taua,{'fx','fy'},{sing_unit(1)*sing_fmag,sing_unit(2)*sing_fmag});
         sing_id12_fxfy_tauq = subs(dyn.id12_fxfy_tauq,{'fx','fy'},{sing_unit(1)*sing_fmag,sing_unit(2)*sing_fmag});
 
-        % forward dynamics (input: taua1 -> output: sing_fmag (magnitude of force along singular direction) & required taua2
-        sing_fd_taua1_fxfy = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua2]);
-        sing_fd_taua2_fxfy = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua1]);
-        disp(sing_fd_taua1_fxfy);
-        disp(sing_fd_taua2_fxfy);
+        % forward dynamics (input: taua1 & taua2 -> output: sing_fmag (magnitude of force wrt output direction)
+
 
         calc.fant_vec
         calc.plot_points
