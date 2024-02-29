@@ -55,11 +55,12 @@ style = struct();
 [style.vScale,style.fScale,style.pScale] = deal(5e-3,1e-3,1e-3);
 [style.vColor,style.fColor,style.pColor] = deal([0.6350 0.0780 0.1840],[0 0.4470 0.7410],[0.4940 0.1840 0.5560]);
 [style.vVis  ,style.fVis  ,style.pVis  ] = deal(true,true,true);
+style.aVis                               = true;
 
 [style.plot_lim,style.setup_lim] = deal([[-40 150];[-40 120]]*1e-3,[[-25 25];[-25 120]]*1e-3);
 
 %% PRE-SETTING evaluation positions
-pts = [[0;110] [34;104] [65;80] [70;20] [10;-20]] * 1e-3;
+pts = [[0;110] [34;104] [65;800.] [70;20] [10;-20]] * 1e-3;
 
 %% Preliminary Calculations (run only once per session) (takes long)
 
@@ -164,7 +165,7 @@ ui.discr.concept_lbl.Text = "CONCEPT";
 ui.discr.concept_lbl.Layout.Row = 1;
 ui.discr.concept_lbl.Layout.Column = 1;
 
-% SOLVE
+% SOLVE (button)
 ui.solve = uibutton(ui.g_fig,"Text","Solve >>","ButtonPushedFcn",@updatesol);
 ui.solve.Layout.Row = 4;
 ui.solve.Layout.Column = 2;
@@ -177,10 +178,18 @@ ui.p_calc.Layout.Row = [1 2];
 ui.p_calc.Layout.Column = 4;
 ui.g_calc = uigridlayout(ui.p_calc);
 % ui.g_calc.RowHeight = {35,35,35,35,35,35};
-% ui.g_calc.ColumnWidth = {'2x','3x'};
+ui.g_calc.ColumnWidth = {'1x'};
 ui.g_calc.Scrollable = 'on';
-ui.g_calc.RowSpacing = 0;
+ui.g_calc.RowSpacing = 5;
 ui.g_calc.ColumnSpacing = 0;
+
+ui.calc = [];
+for i = 1:length(pts)
+    ui.calc = [ui.calc uitextarea(ui.g_calc,"Value","Input Point #"+string(i))];
+    ui.calc(i).Layout.Row = i;
+    ui.calc(i).Layout.Column = 1;
+    ui.calc(i).Editable = "off";
+end
 
 % ui: visibility control
 ui.p_vis = uipanel(ui.g_fig,'Title','Visibility');
@@ -188,18 +197,29 @@ ui.p_vis = uipanel(ui.g_fig,'Title','Visibility');
 ui.p_vis.Layout.Row = 3;
 ui.p_vis.Layout.Column = 4;
 ui.g_vis = uigridlayout(ui.p_vis);
-% ui.g_vis.RowHeight = {35,35,35,35,35,35};
-% ui.g_vis.ColumnWidth = {'2x','3x'};
-ui.g_vis.Scrollable = 'on';
+ui.g_vis.RowHeight = {15};
+ui.g_vis.ColumnWidth = {'1x','1x','1x','1x'};
+% ui.g_vis.Scrollable = 'on';
 ui.g_vis.RowSpacing = 0;
 ui.g_vis.ColumnSpacing = 0;
+ui.g_vis.Padding = [3 3 3 3];
+
+vis_names = ["vVis" "fVis" "pVis" "aVis"];
+ui.vis = struct();
+for i = 1:length(vis_names)
+    ui.(vis_names(i)) = uicheckbox(ui.g_vis,'Text',vis_names(i),'ValueChangedFcn',@(src,event)updatestyle(src,event,vis_names(i)),'Value',true);
+    ui.Layout.Row = 1;
+    ui.Layout.Column = i;
+end
 
 % ui: save
 ui.save = uibutton(ui.g_fig,'Text','Save',"ButtonPushedFcn",@(src,event) uisave);
 drawnow;
 
 show_setup(ui.ax_setup,syn,style);
+%%
 show_flowers(ui.ax_plot,calcs,style)
+write_calcs(ui,calcs)
 
 %% Initial Population
 show_setup(ui.ax_setup,syn,style);
@@ -248,6 +268,29 @@ function show_flowers(ax,calcs,style)
     end
 end
 
+function write_calcs(ui,calcs)
+    for i = 1:length(calcs)
+        ui.calc(i).Value="POINT #"+string(i)+newline+jsonencode(calcs(i),"PrettyPrint",true);
+    end
+    drawnow;
+end
+
+% Save Data
+function save_data(ui,syn,calcs)
+    nowstr = datestr(now,'yyyy-mm-dd_HH-MM-SS');
+    dir_string = "./figures/"+nowstr;
+    mkdir(dir_string);
+    disp("[SAVE] Saving data to " + dir_string);
+    exportgraphics(ui.ax_plot ,dir_string + "/results.png");
+    exportgraphics(ui.ax_setup,dir_string + "/setup.png");
+
+    f_params = fopen(dir_string+"/params.json",'wt');
+    fprintf(f_params,jsonencode(syn, "PrettyPrint", true))
+    
+    f_calcs = fopen(dir_string+"/calculations.json",'wt');
+    fprintf(f_calcs,jsonencode(calcs,"PrettyPrint",true));
+end
+
 %% callback function(s)
 function updatesyn(~,event,name)
     if name == "null"
@@ -271,12 +314,16 @@ function updatesol(~,~)
     evalin('base','dyns = get_dyns(predyn_B,predyn_C,syn,pts);');
     evalin('base','calcs = calc_flowers(dyns,syn);');
     evalin('base','show_flowers(ui.ax_plot,calcs,style);');
+    evalin('base','write_calcs(ui,calcs);')
     disp("[UI-SOLVE] SOLVE FINISHED")
 end
 
 function updatestyle(~,event,name)
+    disp("[VIS] "+name + " Changed to " + event.Value)
+    evalin('base',sprintf("style.%s=%d;",name,event.Value));
+    evalin('base','show_flowers(ui.ax_plot,calcs,style);');
 end
 
 function uisave(~,~)
-    evalin('base','exportgraphics(ui.fig,"test.pdf")')
+    evalin('base','save_data(ui,syn,calcs);');
 end

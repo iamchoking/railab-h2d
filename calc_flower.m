@@ -3,41 +3,48 @@ function calc = calc_flower (dyn,syn)
     % if nargin < 1
     % end
 
+    calc.singular = dyn.singular;      
+
     %% Get representative calculations
     
+    calc.maxv = struct();
+    calc.maxf = struct();
+    calc.maxp = struct();
+
     if dyn.singular %special treatment for sigular cases
-        disp("[CALC] Calculating for singular case")
+        disp("[CALC] !!Calculating for singular case")
         sing_unit = dyn.J_fing(:,1)/norm(dyn.J_fing(:,1)); %all resulting velocities are parallel to this vector.
+        sing_ang  = atan2(sing_unit(2),sing_unit(1));
         syms sing_vmag sing_fmag;
         syms taua1 taua2;
+        syms fx fy;
+
+        disp("[CALC] Singular axis: ["+strjoin(string(sing_unit))+"] (angle " + rad2deg(sing_ang) + "deg)");
+        
 
         sing_id_fxfy_taua = subs(dyn.id_fxfy_taua,{'fx','fy'},{sing_unit(1)*sing_fmag,sing_unit(2)*sing_fmag});
         sing_id12_fxfy_tauq = subs(dyn.id12_fxfy_tauq,{'fx','fy'},{sing_unit(1)*sing_fmag,sing_unit(2)*sing_fmag});
 
         % forward dynamics (input: taua1 -> output: sing_fmag (magnitude of force along singular direction) & required taua2
-        sing_fd_taua1_fxfy = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua2]);
-        sing_fd_taua2_fxfy = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua1]);
-        disp(sing_fd_taua1_fxfy);
-        disp(sing_fd_taua2_fxfy);
+        sing_fd_taua1_fxfy_sol = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua2]);
+        sing_fd_taua2_fxfy_sol = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua1]);
 
-        calc.fant_vec
-        calc.plot_points
-        calc.v_borders
-        calc.f_borders
-        calc.p_borders
-        calc.angles
-        calc.maxv_ang
-        calc.maxv_v
-        calc.maxv_f
-        calc.maxv_p
-        calc.maxf_ang
-        calc.maxf_v
-        calc.maxf_f
-        calc.maxf_p
-        calc.maxp_ang
-        calc.maxp_v
-        calc.maxp_f
-        calc.maxp_p
+        calc.fant_vec = sing_unit*subs(sing_fd_taua1_fxfy_sol.sing_fmag,taua1,0); %incomplete solution...
+
+        joint_points = subs(dyn.forw_joint_pos,syn);
+        calc.plot_points = double([[0;0] joint_points]);
+        
+        calc.v_borders = [];
+        calc.f_borders = [];
+        calc.p_borders = [];
+        calc.angles    = [];
+        calc.maxv.ang  = sing_ang;
+        calc.maxv.v    = max(transpose(sing_unit)*dyn.J_full(:,1)*syn.a1dot_max,-transpose(sing_unit)*dyn.J_full(:,1)*syn.a1dot_max*syn.rev_v_decay) + max(transpose(sing_unit)*dyn.J_full(:,2)*syn.a2dot_max,-transpose(sing_unit)*dyn.J_full(:,2)*syn.a2dot_max*syn.rev_v_decay);
+        calc.maxv.f    = min(subs(sing_fd_taua1_fxfy_sol.sing_fmag,taua1,syn.taua1_max),subs(sing_fd_taua2_fxfy_sol.sing_fmag,taua2,syn.taua2_max));
+        calc.maxv.p    = calc.maxv.v*calc.maxv.f;
+
+        calc.maxf  = calc.maxv;
+        calc.maxp  = calc.maxv;
     else
         % Equation for calculating max. force / velocity given the direction in
         % task space (used later for power calculation)
@@ -85,9 +92,8 @@ function calc = calc_flower (dyn,syn)
         num_points = 10*4;
         
         % finger body points
-        plot_origin = [0;0];    
         joint_points = subs(dyn.forw_joint_pos,syn);
-        calc.plot_points = double([plot_origin plot_origin+joint_points]);
+        calc.plot_points = double([[0;0] joint_points]);
     
         if(syn.concept > 0)
             v_inputs = border_inputs(syn.a1dot_max,-syn.rev_v_decay * syn.a1dot_max,syn.a2dot_max,-syn.rev_v_decay * syn.a2dot_max,num_points);
@@ -100,16 +106,16 @@ function calc = calc_flower (dyn,syn)
         calc.v_borders = double(dyn.J_full*v_inputs); %resulting border velocities
     
         calc.f_borders = zeros(2,num_points);
-        for(i = 1:length(f_inputs))
+        for i = 1:length(f_inputs)
             calc.f_borders(:,i) = double(subs(dyn.fd_taua_fxfy,taua,f_inputs(:,i)));
         end %resulting border forces
     
         calc.p_borders = zeros(2,num_points*2);
         calc.angles    = zeros(1,num_points*2);
     
-        [calc.maxv_ang,calc.maxv_v,calc.maxv_f,calc.maxv_p] = deal(0,0,0,0);
-        [calc.maxf_ang,calc.maxf_v,calc.maxf_f,calc.maxf_p] = deal(0,0,0,0);
-        [calc.maxp_ang,calc.maxp_v,calc.maxp_f,calc.maxp_p] = deal(0,0,0,0);
+        [calc.maxv.ang,calc.maxv.v,calc.maxv.f,calc.maxv.p] = deal(0,0,0,0);
+        [calc.maxf.ang,calc.maxf.v,calc.maxf.f,calc.maxf.p] = deal(0,0,0,0);
+        [calc.maxp.ang,calc.maxp.v,calc.maxp.f,calc.maxp.p] = deal(0,0,0,0);
     
         for i_v = 1:num_points
             angle = atan2(calc.v_borders(2,i_v),calc.v_borders(1,i_v));
@@ -124,55 +130,53 @@ function calc = calc_flower (dyn,syn)
             calc.angles(i_v)         = angle;
             % calc.f_borders(:,i_v+num_points) = unit*angle_f;
     
-            if angle_p > calc.maxp_p
-                calc.maxp_p = angle_p;
-                calc.maxp_ang = angle;
-                calc.maxp_v = angle_v;
-                calc.maxp_f = angle_f;
+            if angle_p > calc.maxp.p
+                calc.maxp.p = angle_p;
+                calc.maxp.ang = angle;
+                calc.maxp.v = angle_v;
+                calc.maxp.f = angle_f;
             end
-            if angle_v > calc.maxv_v
-                calc.maxv_v   = angle_v;
-                calc.maxv_ang = angle;
-                calc.maxv_p   = angle_p;
-                calc.maxv_f   = angle_f;
+            if angle_v > calc.maxv.v
+                calc.maxv.v   = angle_v;
+                calc.maxv.ang = angle;
+                calc.maxv.p   = angle_p;
+                calc.maxv.f   = angle_f;
             end
     
             % angle_f
         end
-    end
 
-    for i_f = 1:num_points
-        angle = atan2(calc.f_borders(2,i_f),calc.f_borders(1,i_f));
-        unit = subs(unit_d,theta_d,angle);
-
-        angle_v = double(subs(maxv_d_syn,theta_d,angle));
-        angle_f = norm(calc.f_borders(:,i_f));
-
-        angle_p = angle_v*angle_f;
-
-        calc.p_borders(:,i_f+num_points)    = unit*angle_p;
-        calc.angles(i_f + num_points)       = angle;
-        % calc.v_borders(:,i_f+num_points)    = unit*angle_v;
-        % disp(p_points(:,i_f+num_points))
-
-        if angle_p > calc.maxp_p
-            calc.maxp_p = angle_p;
-            calc.maxp_ang = angle;
-            calc.maxp_v = angle_v;
-            calc.maxp_f = angle_f;
-        end
-
-        if angle_f > calc.maxf_f
-            calc.maxf_f   = angle_f;
-            calc.maxf_ang = angle;
-            calc.maxf_p   = angle_p;
-            calc.maxf_v   = angle_v;
-        end
-    end
-
+        for i_f = 1:num_points
+            angle = atan2(calc.f_borders(2,i_f),calc.f_borders(1,i_f));
+            unit = subs(unit_d,theta_d,angle);
     
-    [~,p_asc_idx] = sort(calc.angles);
-    calc.p_borders = calc.p_borders(:,p_asc_idx);
-    calc.singular = dyn.singular;      
+            angle_v = double(subs(maxv_d_syn,theta_d,angle));
+            angle_f = norm(calc.f_borders(:,i_f));
+    
+            angle_p = angle_v*angle_f;
+    
+            calc.p_borders(:,i_f+num_points)    = unit*angle_p;
+            calc.angles(i_f + num_points)       = angle;
+            % calc.v_borders(:,i_f+num_points)    = unit*angle_v;
+            % disp(p_points(:,i_f+num_points))
+    
+            if angle_p > calc.maxp.p
+                calc.maxp.p = angle_p;
+                calc.maxp.ang = angle;
+                calc.maxp.v = angle_v;
+                calc.maxp.f = angle_f;
+            end
+    
+            if angle_f > calc.maxf.f
+                calc.maxf.f   = angle_f;
+                calc.maxf.ang = angle;
+                calc.maxf.p   = angle_p;
+                calc.maxf.v   = angle_v;
+            end
+        end
+        [~,p_asc_idx] = sort(calc.angles);
+        calc.p_borders = calc.p_borders(:,p_asc_idx);
+    end
+
 
 end

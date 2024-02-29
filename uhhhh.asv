@@ -1,5 +1,0 @@
-syms a_subs
-
-x = structout({'a'},{a_subs});
-
-subs(x,a_subs =)
