@@ -290,6 +290,7 @@ function dyn = tendon_symbolic(syn,override_concept)
     id2_fxfy_tauth = transpose(J_th_v)*[fx;fy;nz];
     fd2_tauq_tauth = subs(id2_fxfy_tauth,f(1:2),fd12_tauq_fxfy);
 
+    dyn.id_fxfy_taux = simplify(subs(id_fxfy_taux,syn));
     disp("[TENDON-SYMBOLIC] Symbolic Dynamics Solved ("+C_LETTER+")");
 
 

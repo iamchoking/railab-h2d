@@ -7,7 +7,8 @@ syn = struct();
 % actuation: 1: ballscrew
 
 % Link Dimensions
-[syn.l1,syn.l2,syn.l3] = deal(50e-3,35e-3,25e-3);
+[syn.l1,syn.l2,syn.l3] = deal(45e-3,30e-3,15e-3);
+% [syn.l1,syn.l2,syn.l3] = deal(50e-3,35e-3,25e-3);
 
 % Pulley Dimensions
 [syn.r1m,syn.r1p,syn.r1d] = deal(5e-3,10e-3,7.5e-3);
@@ -23,7 +24,7 @@ syn.delx = 0;
 
 if(syn.actuation == 1)
     % Using (conservative) estimates for ballscrew transmission
-    [syn.lead1,syn.lead2,syn.eff1,syn.eff2] = deal(1e-3,1e-3,0.9,0.9);
+    [syn.lead1,syn.lead2,syn.eff1,syn.eff2] = deal(0.5e-3,0.5e-3,0.9,0.9);
 
     % ECX-SPEEDP 13M HIGH-POWER version
     [syn.taua1_max,syn.taua1_stall,syn.a1dot_max] = deal(5.93e-3,81.3e-3,66800*2*pi/60);
@@ -60,7 +61,8 @@ style.aVis                               = true;
 [style.plot_lim,style.setup_lim] = deal([[-40 150];[-40 120]]*1e-3,[[-25 25];[-25 120]]*1e-3);
 
 %% PRE-SETTING evaluation positions
-pts = [[0;110] [34;104] [65;800.] [70;20] [10;-20]] * 1e-3;
+% pts = [[0;110] [34;104] [65;80] [70;20] [10;-20]] * 1e-3;
+pts = [[0;90] [30;80] [50;60] [65;10] [20;-20]] * 1e-3;
 
 %% Preliminary Calculations (run only once per session) (takes long)
 
@@ -189,6 +191,7 @@ for i = 1:length(pts)
     ui.calc(i).Layout.Row = i;
     ui.calc(i).Layout.Column = 1;
     ui.calc(i).Editable = "off";
+    ui.calc(i).FontSize = 10;
 end
 
 % ui: visibility control
@@ -217,9 +220,6 @@ ui.save = uibutton(ui.g_fig,'Text','Save',"ButtonPushedFcn",@(src,event) uisave)
 drawnow;
 
 show_setup(ui.ax_setup,syn,style);
-%%
-show_flowers(ui.ax_plot,calcs,style)
-write_calcs(ui,calcs)
 
 %% Initial Population
 show_setup(ui.ax_setup,syn,style);
@@ -228,7 +228,7 @@ updatesol(0,0);
 % calcs = calc_flowers(dyns,syn);
 % show_flowers(ui.ax_plot,calcs,style);
 %% Member functions
-
+write_calcs(ui,calcs,style);
 % get full dynamics from input positions
 function dyns = get_dyns(predyn_B,predyn_C,syn,pts)
     if abs(syn.concept) == 1
@@ -268,13 +268,20 @@ function show_flowers(ax,calcs,style)
     end
 end
 
-function write_calcs(ui,calcs)
+function write_calcs(ui,calcs,style)
+    outputs(1:length(calcs)) = "";
     for i = 1:length(calcs)
-        ui.calc(i).Value="POINT #"+string(i)+newline+jsonencode(calcs(i),"PrettyPrint",true);
+        outputs(i) = outputs(i) + sprintf("[P%d] [%.0f,%.0f %.0fdeg] Q:[%.2f,%.2f](mm)\n",i,calcs(i).pos(1)*1000,calcs(i).pos(2)*1000,rad2deg(calcs(i).pos(3)),calcs(i).q(1)*1000,calcs(i).q(2)*1000);
+        outputs(i) = outputs(i) + sprintf("J_fing = [%s;%s]",strjoin(string(calcs(i).J_fing(1,:))),strjoin(string(calcs(i).J_fing(2,:))));
+        if calcs(i).singular;  outputs(i) = outputs(i) + "<SINGULAR>\n"; else; outputs(i) = outputs(i) + "\n"; end
+    end
+    % disp(outputs(2));
+    for i = 1:length(calcs)
+        % ui.calc(i).Value="POINT #"+string(i)+newline+jsonencode(calcs(i),"PrettyPrint",true);
+        ui.calc(i).Value = outputs(i);
     end
     drawnow;
 end
-
 % Save Data
 function save_data(ui,syn,calcs)
     nowstr = datestr(now,'yyyy-mm-dd_HH-MM-SS');
@@ -322,6 +329,7 @@ function updatestyle(~,event,name)
     disp("[VIS] "+name + " Changed to " + event.Value)
     evalin('base',sprintf("style.%s=%d;",name,event.Value));
     evalin('base','show_flowers(ui.ax_plot,calcs,style);');
+    evalin('base','write_calcs(ui,calcs,style);');
 end
 
 function uisave(~,~)

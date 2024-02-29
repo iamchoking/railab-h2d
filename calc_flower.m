@@ -4,6 +4,11 @@ function calc = calc_flower (dyn,syn)
     % end
 
     calc.singular = dyn.singular;      
+    calc.q        = dyn.q;
+    calc.th       = dyn.th;
+    calc.a        = dyn.a;
+    calc.pos      = dyn.pos;
+    calc.J_fing   = dyn.J_fing;
 
     %% Get representative calculations
     
@@ -121,7 +126,7 @@ function calc = calc_flower (dyn,syn)
             angle = atan2(calc.v_borders(2,i_v),calc.v_borders(1,i_v));
             unit = subs(unit_d,theta_d,angle);
     
-            angle_v = norm(calc.v_borders(:,i_v));
+            angle_v = double(norm(calc.v_borders(:,i_v)));
             angle_f = double(subs(maxf_d_syn,theta_d,angle));
     
             angle_p = angle_v*angle_f;
@@ -151,7 +156,7 @@ function calc = calc_flower (dyn,syn)
             unit = subs(unit_d,theta_d,angle);
     
             angle_v = double(subs(maxv_d_syn,theta_d,angle));
-            angle_f = norm(calc.f_borders(:,i_f));
+            angle_f = double(norm(calc.f_borders(:,i_f)));
     
             angle_p = angle_v*angle_f;
     
@@ -176,7 +181,16 @@ function calc = calc_flower (dyn,syn)
         end
         [~,p_asc_idx] = sort(calc.angles);
         calc.p_borders = calc.p_borders(:,p_asc_idx);
+
+
     end
-
-
+    cats = ["maxv","maxf","maxp"];
+    for i = 1:length(cats)
+        fx = calc.(cats(i)).f * cos(calc.(cats(i)).ang);
+        fy = calc.(cats(i)).f * sin(calc.(cats(i)).ang);
+        calc.(cats(i)).tauq = double(subs(dyn.id12_fxfy_tauq,{"fx","fy"},{fx,fy}));
+        calc.(cats(i)).taux = double(subs(dyn.id_fxfy_taux  ,{"fx","fy"},{fx,fy}));
+        %TODO: deduce qdot / adot
+        
+    end
 end

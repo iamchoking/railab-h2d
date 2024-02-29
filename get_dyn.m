@@ -6,6 +6,8 @@ function dyn = get_dyn(predyn,syn,pos_input)
 
     % be advised, vpasolve ignores all assumptions...
     invkin_eqns = simplify(subs([predyn.forw_q_pos(1:2) == pos_input],syn));
+    syms q1 q2
+    q = [q1;q2];
     % disp(invkin_eqns)
     % disp(syn)
     if(sum(pos_input == [0;syn.l1+syn.l2+syn.l3]) == 2)
@@ -14,8 +16,6 @@ function dyn = get_dyn(predyn,syn,pos_input)
         singular = true;
         disp("[DYN] **This position is full-extension")
     else
-        syms q1 q2
-        q = [q1;q2];
         q_sol   = vpasolve(invkin_eqns,[q1,q2],[0,q1_max;-q2_max*0.5,q2_max]);
         q_syn   = [q_sol.q1;q_sol.q2];
     end
@@ -43,11 +43,17 @@ function dyn = get_dyn(predyn,syn,pos_input)
     else
         singular = false;
     end
+
+    dyn.q              = double(q_syn);
+    dyn.th             = double(th_syn);
+    dyn.a              = double(a_syn);
+    dyn.pos            = double(pos_syn);
     dyn.J_full         = double(simplify(subs(predyn.J_full,syn)));
     dyn.id12_fxfy_tauq = simplify(subs(predyn.id12_fxfy_tauq,syn));
     dyn.id_fxfy_taua   = simplify(subs(predyn.id_fxfy_taua,syn));
     dyn.forw_joint_pos = simplify(subs(predyn.forw_joint_pos,syn));
     dyn.tauq_ant       = simplify(subs(predyn.tauq_ant,syn));
+    dyn.id_fxfy_taux   = simplify(subs(predyn.id_fxfy_taux,syn));
 
     dyn.singular       = singular;
     if(singular) %singular solutions have diverging forward dynamics
