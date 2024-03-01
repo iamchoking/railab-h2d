@@ -2,15 +2,18 @@ function show_flower(ax,calc,style)
     hold(ax,"on");
     %% Actual Plotting!
 
-    body_color = "cyan"; %the "appearance" of the body changes with the calculations
+    body_color = [0.4660 0.6740 0.1880]; %the "appearance" of the body changes with the calculations
     body_ls = "-";
 
     if(calc.singular)
         body_ls = "--";
     end
+    if(calc.warn)
+        body_color = "red";
+    end
 
     % plot the manipulator as a set of lines (TODO: and circles)
-    plot(ax,[calc.plot_points(1,1:end-1);calc.plot_points(1,2:end)],[calc.plot_points(2,1:end-1);calc.plot_points(2,2:end)],'Color',body_color,'LineStyle',body_ls,'LineWidth',3)
+    plot(ax,[calc.plot_points(1,1:end-1);calc.plot_points(1,2:end)],[calc.plot_points(2,1:end-1);calc.plot_points(2,2:end)],'Color',body_color,'LineStyle',body_ls,'LineWidth',2,'Marker','o')
 
 
     % flowers
@@ -37,8 +40,8 @@ function show_flower(ax,calc,style)
         if(style.vVis)
             maxv_unit = [cos(calc.maxv.ang);sin(calc.maxv.ang)];
             maxv_points = [calc.plot_points(:,end) style.vScale*calc.maxv.v*maxv_unit + calc.plot_points(:,end) style.fScale*calc.maxv.f*maxv_unit + calc.plot_points(:,end) style.pScale*calc.maxv.p*maxv_unit + calc.plot_points(:,end)];
-            if (calc.maxv.ang == calc.maxp.ang) && style.pVis
-                text(ax,maxv_points(1,2),maxv_points(2,2),"Max V \rightarrow",'Color',style.fColor,'HorizontalAlignment','right',"FontWeight","bold");
+            if ((calc.maxv.ang == calc.maxp.ang) && style.pVis) || ((calc.maxv.ang == calc.maxf.ang) && style.fVis)
+                text(ax,maxv_points(1,2),maxv_points(2,2),"Max V \rightarrow",'Color',style.vColor,'HorizontalAlignment','right',"FontWeight","bold");
             else
                 plot(ax,maxv_points(1,:),maxv_points(2,:),'Color',style.vColor,'Marker','o');
                 text(ax,maxv_points(1,2),maxv_points(2,2),"\leftarrow" + sprintf("v_{maxv}: %0.3f m/s" ,calc.maxv.v),'Color',style.vColor);

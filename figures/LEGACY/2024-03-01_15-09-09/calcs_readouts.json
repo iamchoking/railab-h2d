@@ -1,0 +1,12 @@
+{
+  "P1": "[P1] [0,90 90deg] Q:[0.00,0.00](mm) J_fing = [5.0872 4.3043;0 0]<SINGULAR>  <zero>   tauq: [2.66 3.11] N         (3.97p 4.64p) max T   taux: 3.71 N  <maxv> 0.0 deg   v: 5.23 m/s   f: 12.66 N   p: 66.18 W   tauq: [67.07 57.60] N   taux: 58.75 N  <maxf> 0.0 deg   v: 5.23 m/s   f: 12.66 N   p: 66.18 W   tauq: [67.07 57.60] N   taux: 58.75 N  <maxp> 0.0 deg   v: 5.23 m/s   f: 12.66 N   p: 66.18 W   tauq: [67.07 57.60] N   taux: 58.75 N
+",
+  "P2": "[P2] [55,65 18deg] Q:[7.37,5.89](mm) J_fing = [2.4413 3.5442;-4.3516 -2.1833]  <zero>   tauq: [3.88 4.53] N         (5.78p 6.75p) max T   taux: 5.39 N  <maxv> -47.5 deg   v: 4.93 m/s   f: 13.01 N   p: 64.17 W   tauq: [67.07 56.61] N   taux: 61.12 N  <maxf> 30.7 deg   v: 0.76 m/s   f: 32.32 N   p: 24.64 W   tauq: [0.00 67.07] N   taux: 20.09 N  <maxp> -47.5 deg   v: 4.93 m/s   f: 13.01 N   p: 64.17 W   tauq: [67.07 56.61] N   taux: 61.12 N
+",
+  "P3": "[P3] [70,14 -55deg] Q:[14.73,11.78](mm) J_fing = [-2.4471 1.7706;-4.0137 -3.3266]  <zero>   tauq: [5.09 5.95] N         (7.59p 8.87p) max T   taux: 7.08 N  <maxv> -95.3 deg   v: 4.10 m/s   f: 14.68 N   p: 60.24 W   tauq: [67.07 52.19] N   taux: 67.39 N  <maxf> -28.2 deg   v: 1.81 m/s   f: 19.51 N   p: 35.29 W   tauq: [0.00 67.07] N   taux: 24.01 N  <maxp> -95.3 deg   v: 4.10 m/s   f: 14.68 N   p: 60.24 W   tauq: [67.07 52.19] N   taux: 67.39 N
+",
+  "P4": "[P4] [47,-21 -128deg] Q:[22.10,17.67](mm) J_fing = [-4.2296 0.032503;0.14235 -3.2103]  <zero>   tauq: [6.31 7.36] N         (9.40p 10.98p) max T   taux: 8.77 N  <maxv> -143.8 deg   v: 2.89 m/s   f: 18.24 N   p: 52.80 W   tauq: [67.07 41.45] N   taux: 79.28 N  <maxf> -128.7 deg   v: 2.23 m/s   f: 24.01 N   p: 53.48 W   tauq: [67.07 67.07] N   taux: 91.95 N  <maxp> -128.7 deg   v: 2.23 m/s   f: 24.01 N   p: 53.48 W   tauq: [67.07 67.07] N   taux: 91.95 N
+",
+  "P5": "[P5] [21,-23 -200deg] Q:[29.47,23.56](mm) J_fing = [-1.6755 -0.97887;3.1878 -2.4389]  <zero>   tauq: [7.52 8.78] N         (11.21p 13.09p) max T   taux: 10.46 N  <maxv> 105.1 deg   v: 2.54 m/s   f: 4.18 N   p: 10.62 W   tauq: [22.21 -0.00] N   taux: 21.55 N  <maxf> -173.2 deg   v: 1.19 m/s   f: 46.26 N   p: 55.17 W   tauq: [67.07 67.07] N   taux: 150.12 N  <maxp> -173.2 deg   v: 1.19 m/s   f: 46.26 N   p: 55.17 W   tauq: [67.07 67.07] N   taux: 150.12 N
+"
+}

@@ -107,6 +107,7 @@ function dyn = tendon_symbolic(syn,override_concept)
     
     % outputs
     dyn.forw1_q_th = simplify(subs(forw1_q_th,syn));
+    dyn.forw2_th_pos = simplify(subs(forw2_th_pos,syn));
     dyn.forw_q_pos = simplify(subs(forw_q_pos,syn));
     dyn.forw_a_pos = simplify(subs(forw_a_pos,syn));
     dyn.forw_joint_pos = simplify(subs([[l1*s1;l1*c1] [l1*s1+l2*s12;l1*c1+l2*c12] [l1*s1+l2*s12+l3*s123;l1*c1+l2*c12+l3*c123]],syn));
@@ -135,9 +136,8 @@ function dyn = tendon_symbolic(syn,override_concept)
     %% Inverse Kinematics 1B (th1 th2 th3-> q delx)
     
     inv1b_sol = solve(string_eqns,[q1 q2 delx]);
-    inv1b_q1 = inv1b_sol.q1;
-    inv1b_q2 = inv1b_sol.q2;
-    inv1b_delx = inv1b_sol.delx;
+    inv1b_th_q = [inv1b_sol.q1;inv1b_sol.q2];
+    inv1b_th_delx = inv1b_sol.delx;
     
     %% Inverse Kinematics 2A (x y -> th1 th2 (assume delx = 0))
     
@@ -155,6 +155,9 @@ function dyn = tendon_symbolic(syn,override_concept)
     
     %% Full Inverse Kinematics (TODO)
     
+    dyn.inv1b_th_q    = simplify(subs(inv1b_th_q,syn));
+    dyn.inv1b_th_delx = simplify(subs(inv1b_th_delx,syn));
+
     disp("<"+C_LETTER+">[INV ] Done.*")
     
     
@@ -236,7 +239,8 @@ function dyn = tendon_symbolic(syn,override_concept)
     % f_ant = simplify(f_ant(1:2))
     
     % for the "coupler (string x)" tension
-    dyn_taux = 1/rxd*(r1d*tauq1+norm(cross([l3*s123;l3*c123;0],[fx;fy;0])));
+    tauf_th3 = cross([l3*s123;l3*c123;0],[fx;fy;0]);
+    dyn_taux = 1/rxd*(r1d*tauq1+tauf_th3(3));
 
     dyn.f_ant    = simplify(subs(f_ant,syn));
     dyn.tauq_ant = simplify(subs(tauq_ant,syn));

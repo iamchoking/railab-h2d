@@ -1,46 +1,5 @@
-%% Pre-setting constants
-% putting in constants
-syn = struct();
-% [syn.concept,syn.actuation] = deal(1,1);
-[syn.concept,syn.actuation] = deal(2,1);
-% concept: 1: B -1: B (closed loop) 2: C -2: C (closed loop)
-% actuation: 1: ballscrew
 
-% Link Dimensions
-[syn.l1,syn.l2,syn.l3] = deal(45e-3,30e-3,15e-3);
-% [syn.l1,syn.l2,syn.l3] = deal(50e-3,35e-3,25e-3);
-
-% Pulley Dimensions
-[syn.r1m,syn.r1p,syn.r1d] = deal(5e-3,10e-3,7.5e-3);
-[syn.r2m] = deal(12.5e-3);
-[syn.rxp,syn.rxd] = deal(4.5e-3,5.5e-3);
-[syn.rym,syn.ryp] = deal(12e-3,6e-3);
-
-% Antagonistic Properties
-[syn.Tyi,syn.ky] = deal(5,300);
-
-% coupler non-deformation constraint
-syn.delx = 0;
-
-if(syn.actuation == 1)
-    % Using (conservative) estimates for ballscrew transmission
-    [syn.lead1,syn.lead2,syn.eff1,syn.eff2] = deal(0.5e-3,0.5e-3,0.9,0.9);
-
-    % ECX-SPEEDP 13M HIGH-POWER version
-    [syn.taua1_max,syn.taua1_stall,syn.a1dot_max] = deal(5.93e-3,81.3e-3,66800*2*pi/60);
-    [syn.taua2_max,syn.taua2_stall,syn.a2dot_max] = deal(5.93e-3,81.3e-3,66800*2*pi/60);
-
-elseif(syn.actuation == 2)
-    % TODO
-end
-
-if syn.concept > 0
-    syn.rev_v_decay = 0.5; % assume that reversing speed is slowed by this factor
-else
-    syn.rev_v_decay = 1;
-end
-
-%% Designating variables (must be a part of "syn")
+%% Designating variables (must be a initialized in variable "syn")
 var_names   = ["r1m"    "r1p"   "r1d"   "r2m"   "taua1_max" "taua2_max"];
 var_min     = [5*1e-3   5*1e-3  5*1e-3  5*1e-3  5*1e-3      5*1e-3     ];
 var_max     = [15*1e-3  13*1e-3 10*1e-3 15*1e-3  10e-3       10e-3      ];
@@ -48,21 +7,6 @@ var_default = zeros(1,length(var_names));
 for i = 1:length(var_names)
      var_default(i) = syn.(var_names(i));
 end
-
-
-%% PRE-SETTING Style
-style = struct();
-
-[style.vScale,style.fScale,style.pScale] = deal(5e-3,1e-3,1e-3);
-[style.vColor,style.fColor,style.pColor] = deal([0.6350 0.0780 0.1840],[0 0.4470 0.7410],[0.4940 0.1840 0.5560]);
-[style.vVis  ,style.fVis  ,style.pVis  ] = deal(true,true,true);
-style.aVis                               = true;
-
-[style.plot_lim,style.setup_lim] = deal([[-40 150];[-40 120]]*1e-3,[[-25 25];[-25 120]]*1e-3);
-
-%% PRE-SETTING evaluation positions
-% pts = [[0;110] [34;104] [65;80] [70;20] [10;-20]] * 1e-3;
-pts = [[0;90] [30;80] [50;60] [65;10] [20;-20]] * 1e-3;
 
 %% Preliminary Calculations (run only once per session) (takes long)
 
@@ -125,7 +69,7 @@ ui.g_syn.ColumnSpacing = 0;
 ui.syn = struct();
 for i=1:length(var_names)
     ui.syn.(var_names(i)) = uislider(ui.g_syn,'Limits',[var_min(i) var_max(i)], ...
-        'ValueChangingFcn',@(src,event)updatesyn(src,event,var_names(i)),'FontSize',10,'Value',var_default(i));
+        'ValueChangingFcn',@(src,event)updatesyn(src,event,var_names(i)),'FontSize',10,'Value',syn.(var_names(i)));
     ui.syn.(var_names(i)).MajorTicks = [var_min(i) var_max(i)];
     % ui.syn.var_names(i).MinorTicks = [];
     % ui.syn.var_names(i).MajorTickLabels = [];
@@ -224,13 +168,14 @@ show_setup(ui.ax_setup,syn,style);
 %% Initial Population
 show_setup(ui.ax_setup,syn,style);
 updatesol(0,0);
-% dyns = get_dyns(predyn_B,predyn_C,syn,pts);
+% dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode);
 % calcs = calc_flowers(dyns,syn);
 % show_flowers(ui.ax_plot,calcs,style);
 %% Member functions
 write_calcs(ui,calcs,style);
+save_data(ui,syn,calcs,style,pts,input_mode);
 % get full dynamics from input positions
-function dyns = get_dyns(predyn_B,predyn_C,syn,pts)
+function dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode)
     if abs(syn.concept) == 1
         disp("[GET-DYNS] Calculating dynamics for CONCEPT B...")
         predyn = predyn_B;
@@ -242,7 +187,7 @@ function dyns = get_dyns(predyn_B,predyn_C,syn,pts)
     dyns = [];
     for i = 1:length(pts(1,:))
         disp("[DYNS] Solving for point ["+strjoin(string(pts(:,i))) + "]");
-        dyns = [dyns get_dyn(predyn,syn,pts(:,i))];
+        dyns = [dyns get_dyn(predyn,syn,pts(:,i),input_mode)];
     end
     disp("[GET-DYNS] Done.")
 end
@@ -268,34 +213,78 @@ function show_flowers(ax,calcs,style)
     end
 end
 
-function write_calcs(ui,calcs,style)
+function outputs = write_calcs(ui,calcs,style,do_write)
+    if nargin < 4
+        do_write = true;
+    end
     outputs(1:length(calcs)) = "";
     for i = 1:length(calcs)
         outputs(i) = outputs(i) + sprintf("[P%d] [%.0f,%.0f %.0fdeg] Q:[%.2f,%.2f](mm)\n",i,calcs(i).pos(1)*1000,calcs(i).pos(2)*1000,rad2deg(calcs(i).pos(3)),calcs(i).q(1)*1000,calcs(i).q(2)*1000);
         outputs(i) = outputs(i) + sprintf("J_fing = [%s;%s]",strjoin(string(calcs(i).J_fing(1,:))),strjoin(string(calcs(i).J_fing(2,:))));
-        if calcs(i).singular;  outputs(i) = outputs(i) + "<SINGULAR>\n"; else; outputs(i) = outputs(i) + "\n"; end
+        if calcs(i).singular;  outputs(i) = outputs(i) + "<SINGULAR>"+newline; else; outputs(i) = outputs(i) + newline; end
+
+        % always write zero characteristics
+        dat = calcs(i).zero;
+        outputs(i) = outputs(i) + newline;
+        outputs(i) = outputs(i) + sprintf("<zero>\n");
+        outputs(i) = outputs(i) + sprintf("  tauq: [%.2f %.2f] N\n",dat.tauq(1),dat.tauq(2));
+        outputs(i) = outputs(i) + sprintf("        (%.2fp %.2fp) max T\n",dat.tauq(1)/calcs(i).T_max(1)*100,dat.tauq(2)/calcs(i).T_max(2)*100);
+        outputs(i) = outputs(i) + sprintf("  taux: %.2f N\n",dat.taux);
+
+        cat = ["v","f","p"];
+        for j = 1:length(cat)
+            if style.(cat(j)+"Vis")
+                dat = calcs(i).("max"+cat(j));
+                outputs(i) = outputs(i) + newline;
+                outputs(i) = outputs(i) + sprintf("<max%s> %.1f deg\n",cat(j),rad2deg(dat.ang));
+                outputs(i) = outputs(i) + sprintf("  v: %.2f m/s\n",dat.v);
+                outputs(i) = outputs(i) + sprintf("  f: %.2f N\n",dat.f);
+                outputs(i) = outputs(i) + sprintf("  p: %.2f W\n",dat.p);
+                outputs(i) = outputs(i) + sprintf("  tauq: [%.2f %.2f] N\n",dat.tauq(1),dat.tauq(2));
+                outputs(i) = outputs(i) + sprintf("  taux: %.2f N\n",dat.taux);
+            end
+        end
     end
     % disp(outputs(2));
-    for i = 1:length(calcs)
-        % ui.calc(i).Value="POINT #"+string(i)+newline+jsonencode(calcs(i),"PrettyPrint",true);
-        ui.calc(i).Value = outputs(i);
+    if do_write
+        for i = 1:length(calcs)
+            % ui.calc(i).Value="POINT #"+string(i)+newline+jsonencode(calcs(i),"PrettyPrint",true);
+            ui.calc(i).Value = outputs(i);
+        end
     end
     drawnow;
 end
 % Save Data
-function save_data(ui,syn,calcs)
+function save_data(ui,syn,calcs,style,pts,input_mode)
     nowstr = datestr(now,'yyyy-mm-dd_HH-MM-SS');
     dir_string = "./figures/"+nowstr;
     mkdir(dir_string);
     disp("[SAVE] Saving data to " + dir_string);
+    % photos
     exportgraphics(ui.ax_plot ,dir_string + "/results.png");
     exportgraphics(ui.ax_setup,dir_string + "/setup.png");
 
+    % variables
+    save(dir_string+"/syn","syn","style","pts","input_mode");
+
+    % files
     f_params = fopen(dir_string+"/params.json",'wt');
-    fprintf(f_params,jsonencode(syn, "PrettyPrint", true))
+    fprintf(f_params,jsonencode(syn, "PrettyPrint", true));
     
-    f_calcs = fopen(dir_string+"/calculations.json",'wt');
+    f_calcs = fopen(dir_string+"/calcs_raw.json",'wt');
     fprintf(f_calcs,jsonencode(calcs,"PrettyPrint",true));
+
+    f_readouts = fopen(dir_string+"/calcs_readouts.json",'wt');
+    readouts= struct();
+    for i = 1:length(ui.calc)
+        readouts.("P"+string(i)) = sprintf("%s\n",strjoin(ui.calc(i).Value));
+    end
+    % disp(readouts);
+    fprintf(f_readouts,jsonencode(readouts, "PrettyPrint", true));
+
+    fclose(f_params);
+    fclose(f_calcs);
+    fclose(f_readouts);
 end
 
 %% callback function(s)
@@ -318,10 +307,10 @@ end
 
 function updatesol(~,~)
     disp("[UI-SOLVE] SOLVE STARTED")
-    evalin('base','dyns = get_dyns(predyn_B,predyn_C,syn,pts);');
+    evalin('base','dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode);');
     evalin('base','calcs = calc_flowers(dyns,syn);');
     evalin('base','show_flowers(ui.ax_plot,calcs,style);');
-    evalin('base','write_calcs(ui,calcs);')
+    evalin('base','write_calcs(ui,calcs,style);')
     disp("[UI-SOLVE] SOLVE FINISHED")
 end
 
@@ -333,5 +322,5 @@ function updatestyle(~,event,name)
 end
 
 function uisave(~,~)
-    evalin('base','save_data(ui,syn,calcs);');
+    evalin('base','save_data(ui,syn,calcs,style,pts,input_mode);');
 end

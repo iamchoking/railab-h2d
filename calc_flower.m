@@ -9,12 +9,14 @@ function calc = calc_flower (dyn,syn)
     calc.a        = dyn.a;
     calc.pos      = dyn.pos;
     calc.J_fing   = dyn.J_fing;
+    calc.T_max    = [syn.taua1_max*(2*pi/syn.lead1)*syn.eff1;syn.taua2_max*(2*pi/syn.lead2)*syn.eff2];
 
     %% Get representative calculations
     
     calc.maxv = struct();
     calc.maxf = struct();
     calc.maxp = struct();
+    calc.warn = false;
 
     if dyn.singular %special treatment for sigular cases
         disp("[CALC] !!Calculating for singular case")
@@ -113,6 +115,13 @@ function calc = calc_flower (dyn,syn)
         calc.f_borders = zeros(2,num_points);
         for i = 1:length(f_inputs)
             calc.f_borders(:,i) = double(subs(dyn.fd_taua_fxfy,taua,f_inputs(:,i)));
+            if(i == 1 || i == length(f_inputs))
+                taux_temp = double(subs(dyn.id_fxfy_taux  ,{"fx","fy"},{calc.f_borders(1,i),calc.f_borders(2,i)}));
+                if(taux_temp < 0)
+                    disp("[CALC][WARNING] Negative taux found at: "+strjoin(string( f_inputs(:,i)) ) );
+                    calc.warn = true;
+                end
+            end
         end %resulting border forces
     
         calc.p_borders = zeros(2,num_points*2);
@@ -182,9 +191,12 @@ function calc = calc_flower (dyn,syn)
         [~,p_asc_idx] = sort(calc.angles);
         calc.p_borders = calc.p_borders(:,p_asc_idx);
 
-
     end
-    cats = ["maxv","maxf","maxp"];
+    % for depicting antagonistic forces
+    calc.zero = struct();
+    [calc.zero.ang,calc.zero.v,calc.zero.f,calc.zero.p] = deal(0,0,0,0);
+
+    cats = ["maxv","maxf","maxp","zero"];
     for i = 1:length(cats)
         fx = calc.(cats(i)).f * cos(calc.(cats(i)).ang);
         fy = calc.(cats(i)).f * sin(calc.(cats(i)).ang);
@@ -192,5 +204,10 @@ function calc = calc_flower (dyn,syn)
         calc.(cats(i)).taux = double(subs(dyn.id_fxfy_taux  ,{"fx","fy"},{fx,fy}));
         %TODO: deduce qdot / adot
         
+    end
+
+    if calc.zero.tauq <= 0
+        disp("[CALC][WARN] Negative Antagonistic Force Detected.")
+        calc.warn = true;
     end
 end
