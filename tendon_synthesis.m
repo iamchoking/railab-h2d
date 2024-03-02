@@ -1,8 +1,8 @@
 
 %% Designating variables (must be a initialized in variable "syn")
-var_names   = ["r1m"    "r1p"   "r1d"   "r2m"   "taua1_max" "taua2_max"];
-var_min     = [5*1e-3   5*1e-3  5*1e-3  5*1e-3  5*1e-3      5*1e-3     ];
-var_max     = [15*1e-3  13*1e-3 10*1e-3 15*1e-3  10e-3       10e-3      ];
+var_names   = ["r1m"    "r1p"   "r1d"   "r2m"   "taua1_max" "taua2_max" "rym" "ryp" "Tyi" "ky"  "rxd"];
+var_min     = [5*1e-3   5*1e-3  5*1e-3  5*1e-3  5*1e-3      5*1e-3      5e-3   5e-3  0.1   18   5e-3];
+var_max     = [15*1e-3  13*1e-3 10*1e-3 15*1e-3  10e-3       10e-3      15e-3  13e-3 50    2000 15e-3];
 var_default = zeros(1,length(var_names));
 for i = 1:length(var_names)
      var_default(i) = syn.(var_names(i));
@@ -60,7 +60,7 @@ ui.p_syn.Scrollable = 'on';
 ui.p_syn.Layout.Row = [2 4];
 ui.p_syn.Layout.Column = 1;
 ui.g_syn = uigridlayout(ui.p_syn);
-ui.g_syn.RowHeight = {35,35,35,35,35,35};
+ui.g_syn.RowHeight = {35,35,35,35,35,35,35,35,35,35,35,35};
 ui.g_syn.ColumnWidth = {'1x','5x'};
 ui.g_syn.Scrollable = 'on';
 ui.g_syn.RowSpacing = 0;
@@ -69,7 +69,7 @@ ui.g_syn.ColumnSpacing = 0;
 ui.syn = struct();
 for i=1:length(var_names)
     ui.syn.(var_names(i)) = uislider(ui.g_syn,'Limits',[var_min(i) var_max(i)], ...
-        'ValueChangingFcn',@(src,event)updatesyn(src,event,var_names(i)),'FontSize',10,'Value',syn.(var_names(i)));
+        'ValueChangedFcn',@(src,event)updatesyn(src,event,var_names(i)),'FontSize',10,'Value',syn.(var_names(i)));
     ui.syn.(var_names(i)).MajorTicks = [var_min(i) var_max(i)];
     % ui.syn.var_names(i).MinorTicks = [];
     % ui.syn.var_names(i).MajorTickLabels = [];
@@ -230,6 +230,7 @@ function outputs = write_calcs(ui,calcs,style,do_write)
         outputs(i) = outputs(i) + sprintf("  tauq: [%.2f %.2f] N\n",dat.tauq(1),dat.tauq(2));
         outputs(i) = outputs(i) + sprintf("        (%.2fp %.2fp) max T\n",dat.tauq(1)/calcs(i).T_max(1)*100,dat.tauq(2)/calcs(i).T_max(2)*100);
         outputs(i) = outputs(i) + sprintf("  taux: %.2f N\n",dat.taux);
+        outputs(i) = outputs(i) + sprintf("  dely: %.2f mm\n",dat.dely*1000);
 
         cat = ["v","f","p"];
         for j = 1:length(cat)
@@ -301,6 +302,9 @@ function updatesyn(~,event,name)
     else
         evalin('base',sprintf("syn.%s = %f;",name,event.Value));
         % disp(action);
+        if name == "rxd"
+            evalin('base',sprintf("syn.%s = %f;","rxp",event.Value*(9/11)));
+        end
     end
     evalin('base','show_setup(ui.ax_setup,syn,style)');
 end
@@ -310,8 +314,8 @@ function updatesol(~,~)
     evalin('base','dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode);');
     evalin('base','calcs = calc_flowers(dyns,syn);');
     evalin('base','show_flowers(ui.ax_plot,calcs,style);');
-    evalin('base','write_calcs(ui,calcs,style);')
-    disp("[UI-SOLVE] SOLVE FINISHED")
+    evalin('base','write_calcs(ui,calcs,style);');
+    disp("[UI-SOLVE] SOLVE FINISHED");
 end
 
 function updatestyle(~,event,name)

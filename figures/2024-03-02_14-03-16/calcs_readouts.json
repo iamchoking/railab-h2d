@@ -1,0 +1,14 @@
+{
+  "P1": "[P1] [19,87 65deg] Q:[4.32,1.31](mm) J_fing = [3.1316 3.3393;-1.1575 -0.3194]  <zero>   tauq: [4.03 3.39] N         (6.00p 5.05p) max T   taux: 6.35 N   dely: 2.88 mm  <maxv> -12.9 deg   v: 3.69 m/s   f: 19.04 N   p: 70.35 W   tauq: [67.07 66.73] N   taux: 55.07 N  <maxf> 70.6 deg   v: 0.24 m/s   f: 78.77 N   p: 19.29 W   tauq: [-0.00 67.07] N   taux: 20.93 N  <maxp> -12.9 deg   v: 3.69 m/s   f: 19.04 N   p: 70.35 W   tauq: [67.07 66.73] N   taux: 55.07 N
+",
+  "P2": "[P2] [0,90 90deg] Q:[0.00,0.00](mm) J_fing = [3.3489 3.3499;0 0]<SINGULAR>  <zero>   tauq: [2.66 2.23] N         (3.96p 3.33p) max T   taux: 4.19 N   dely: 0.00 mm  <maxv> 0.0 deg   v: 3.73 m/s   f: 19.23 N   p: 71.72 W   tauq: [67.07 66.66] N   taux: 53.39 N  <maxf> 0.0 deg   v: 3.73 m/s   f: 19.23 N   p: 71.72 W   tauq: [67.07 66.66] N   taux: 53.39 N  <maxp> 0.0 deg   v: 3.73 m/s   f: 19.23 N   p: 71.72 W   tauq: [67.07 66.66] N   taux: 53.39 N
+",
+  "P3": "[P3] [55,65 18deg] Q:[12.87,5.89](mm) J_fing = [1.6071 3.0862;-2.8647 -1.3669]  <zero>   tauq: [7.16 6.03] N         (10.68p 8.99p) max T   taux: 11.30 N   dely: 9.47 mm  <maxv> -42.0 deg   v: 3.52 m/s   f: 19.03 N   p: 66.95 W   tauq: [66.39 67.07] N   taux: 60.03 N  <maxf> 33.1 deg   v: 0.65 m/s   f: 33.16 N   p: 21.68 W   tauq: [0.00 67.07] N   taux: 24.27 N  <maxp> -42.0 deg   v: 3.52 m/s   f: 19.03 N   p: 66.95 W   tauq: [66.39 67.07] N   taux: 60.03 N
+",
+  "P4": "[P4] [70,14 -55deg] Q:[25.74,11.78](mm) J_fing = [-1.6109 2.2297;-2.6422 -2.5736]  <zero>   tauq: [11.67 9.82] N         (17.40p 14.64p) max T   taux: 18.42 N   dely: 18.94 mm  <maxv> -83.2 deg   v: 2.92 m/s   f: 20.31 N   p: 59.39 W   tauq: [61.11 67.07] N   taux: 70.24 N  <maxf> -87.7 deg   v: 2.63 m/s   f: 21.51 N   p: 56.58 W   tauq: [67.07 67.07] N   taux: 74.16 N  <maxp> -83.2 deg   v: 2.92 m/s   f: 20.31 N   p: 59.39 W   tauq: [61.11 67.07] N   taux: 70.24 N
+",
+  "P5": "[P5] [47,-21 -128deg] Q:[38.61,17.67](mm) J_fing = [-2.7844 0.82601;0.093708 -3.237]  <zero>   tauq: [16.18 13.61] N         (24.12p 20.29p) max T   taux: 25.53 N   dely: 28.41 mm  <maxv> -56.0 deg   v: 2.21 m/s   f: 9.89 N   p: 21.81 W   tauq: [-0.00 44.70] N   taux: 25.57 N  <maxf> -131.6 deg   v: 1.80 m/s   f: 28.59 N   p: 51.36 W   tauq: [67.07 67.07] N   taux: 100.21 N  <maxp> -131.6 deg   v: 1.80 m/s   f: 28.59 N   p: 51.36 W   tauq: [67.07 67.07] N   taux: 100.21 N
+",
+  "P6": "[P6] [21,-23 -200deg] Q:[51.48,23.56](mm) J_fing = [-1.103 -0.66454;2.0985 -3.0369]  <zero>   tauq: [20.68 17.40] N         (30.84p 25.95p) max T   taux: 32.64 N   dely: 37.88 mm  <maxv> -91.6 deg   v: 2.28 m/s   f: 10.00 N   p: 22.77 W   tauq: [-0.00 47.96] N   taux: 25.89 N  <maxf> -174.4 deg   v: 0.89 m/s   f: 51.91 N   p: 46.35 W   tauq: [67.07 67.07] N   taux: 166.97 N  <maxp> -174.4 deg   v: 0.89 m/s   f: 51.91 N   p: 46.35 W   tauq: [67.07 67.07] N   taux: 166.97 N
+"
+}

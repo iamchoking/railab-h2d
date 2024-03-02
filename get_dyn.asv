@@ -79,24 +79,19 @@ function dyn = get_dyn(predyn,syn,pos_input,mode)
 
     dyn.id_fxfy_taua   = simplify(subs(predyn.id_fxfy_taua,syn));
     dyn.id_A           = double(simplify(subs(predyn.id_A,syn)));
-    dyn.id_b           = double(simplify(subs(predyn.id_b,syn)));
 
     dyn.forw_joint_pos = simplify(subs(predyn.forw_joint_pos,syn));
-    dyn.tauq_ant       = double(simplify(subs(predyn.tauq_ant,syn)));
+    dyn.tauq_ant       = simplify(subs(predyn.tauq_ant,syn));
     dyn.id_fxfy_taux   = simplify(subs(predyn.id_fxfy_taux,syn));
 
     dyn.singular       = singular;
 
     if(singular) %singular solutions have diverging forward dynamics / indeterminate antagonistic force
-        dyn.fd_taua_fxfy   = [0;0];
-        dyn.fd_A           = 0;
-        dyn.fd_b           = 0;
+        dyn.fd_taua_fxfy   = 0;
         dyn.f_ant          = 0;
     else
         dyn.fd_taua_fxfy   = simplify(subs(predyn.fd_taua_fxfy,syn));
-        dyn.fd_A           = double(simplify(subs(predyn.fd_A,syn)));
-        dyn.fd_b           = double(simplify(subs(predyn.fd_b,syn)));
-        dyn.f_ant          = double(simplify(subs(predyn.f_ant,syn)));
+        dyn.f_ant          = simplify(subs(predyn.f_ant,syn));
     end
 
 end
