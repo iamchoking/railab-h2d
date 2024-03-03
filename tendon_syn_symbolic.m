@@ -8,6 +8,17 @@ for i = 1:length(var_names)
      var_default(i) = syn.(var_names(i));
 end
 
+%% Preliminary Calculations (run only once per session) (takes long)
+
+% must remove [var_names] from the pre-calculation (need to be symbolic)
+presyn = syn;
+for i = 1:length(var_names)
+    presyn = rmfield(presyn,var_names(i));
+end
+
+predyn_B = tendon_symbolic(presyn,1); %the "preliminary" dynamics (unfinished, lacks config data)
+predyn_C = tendon_symbolic(presyn,2);
+
 %% generate ui
 ui = struct();
 
@@ -157,14 +168,24 @@ show_setup(ui.ax_setup,syn,style);
 %% Initial Population
 show_setup(ui.ax_setup,syn,style);
 updatesol(0,0);
+% dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode);
 % calcs = calc_flowers(dyns,syn);
 % show_flowers(ui.ax_plot,calcs,style);
 %% Member functions
 % write_calcs(ui,calcs,style);
 % save_data(ui,syn,calcs,style,pts,input_mode);
-% tendon_dyn_numeric(syn,pts(1,:),input_mode);
+% get_dyns(predyn_B,predyn_C,syn,pts,input_mode);
+tendon_dyn_numeric(syn,pts(1,:),input_mode);
 % get full dynamics from input positions
-function dyns = get_dyns(syn,pts,input_mode)
+function dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode)
+    if abs(syn.concept) == 1
+        disp("[GET-DYNS] Calculating dynamics for CONCEPT B...")
+        predyn = predyn_B;
+    else
+        disp("[GET-DYNS] Calculating dynamics for CONCEPT B...")
+        predyn = predyn_C;
+    end
+    
     dyns = [];
     for i = 1:length(pts(1,:))
         disp("[DYNS] Solving for configuration ["+strjoin(string(pts(:,i))) + "]");
@@ -293,7 +314,7 @@ end
 
 function updatesol(~,~)
     disp("[UI-SOLVE] SOLVE STARTED")
-    evalin('base','dyns = get_dyns(syn,pts,input_mode);');
+    evalin('base','dyns = get_dyns(predyn_B,predyn_C,syn,pts,input_mode);');
     evalin('base','calcs = calc_flowers(dyns,syn);');
     evalin('base','show_flowers(ui.ax_plot,calcs,style);');
     evalin('base','write_calcs(ui,calcs,style);');

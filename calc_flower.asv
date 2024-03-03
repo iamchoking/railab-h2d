@@ -3,13 +3,14 @@ function calc = calc_flower (dyn,syn)
     % if nargin < 1
     % end
 
-    calc.singular = dyn.singular;      
-    calc.q        = dyn.q;
-    calc.th       = dyn.th;
-    calc.a        = dyn.a;
-    calc.pos      = dyn.pos;
-    calc.J_fing   = dyn.J_fing;
-    calc.T_max    = [syn.taua1_max*(2*pi/syn.lead1)*syn.eff1;syn.taua2_max*(2*pi/syn.lead2)*syn.eff2];
+    calc.singular    = dyn.singular;      
+    calc.q           = dyn.q;
+    calc.th          = dyn.th;
+    calc.a           = dyn.a;
+    calc.pos         = dyn.pos;
+    calc.J_fing      = dyn.J_fing;
+    calc.T_max       = [syn.taua1_max*(2*pi/syn.lead1)*syn.eff1;syn.taua2_max*(2*pi/syn.lead2)*syn.eff2];
+    calc.plot_points = double([[0;0] dyn.forw_joint_pos]);
 
     %% Get representative calculations
     
@@ -18,36 +19,31 @@ function calc = calc_flower (dyn,syn)
     calc.maxp = struct();
     calc.warn = false;
 
+    adot_max = [syn.a1dot_max;syn.a2dot_max];
+    taua_max = [syn.taua1_max;syn.taua2_max];
+    if(syn.concept > 0)
+        adot_min = -syn.rev_v_decay*adot_max;
+        taua_min = [0;0];
+    else % full reverse actuation for closed-loop variants
+        adot_min = -adot_max;
+        taua_min = -taua_max;
+    end
+
     if dyn.singular %special treatment for sigular cases
         disp("[CALC] !!Calculating for singular case")
         sing_unit = dyn.J_fing(:,1)/norm(dyn.J_fing(:,1)); %all resulting velocities are parallel to this vector.
         sing_ang  = atan2(sing_unit(2),sing_unit(1));
-        syms sing_vmag sing_fmag;
-        syms taua1 taua2;
-        syms fx fy;
-
-        disp("[CALC] Singular axis: ["+strjoin(string(sing_unit))+"] (angle " + rad2deg(sing_ang) + "deg)");
-        
+        % legacy (symbolic) approach is redacted. see previous commits.
         inv_J_full = pinv(dyn.J_full);
-        sing_id_fxfy_taua = subs(dyn.id_fxfy_taua,{'fx','fy'},{sing_unit(1)*sing_fmag,sing_unit(2)*sing_fmag});
-        sing_id12_fxfy_tauq = subs(dyn.id12_fxfy_tauq,{'fx','fy'},{sing_unit(1)*sing_fmag,sing_unit(2)*sing_fmag});
-
-        % forward dynamics (input: taua1 -> output: sing_fmag (magnitude of force along singular direction) & required taua2
-        sing_fd_taua1_fxfy_sol = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua2]);
-        sing_fd_taua2_fxfy_sol = solve(sing_id_fxfy_taua==[taua1;taua2],[sing_fmag taua1]);
-
-        calc.fant_vec = sing_unit*subs(sing_fd_taua1_fxfy_sol.sing_fmag,taua1,0); %incomplete solution...
-
-        joint_points = subs(dyn.forw_joint_pos,syn);
-        calc.plot_points = double([[0;0] joint_points]);
+        calc.fant_vec = -sing_unit*maxf_d(-sing_ang);
         
         calc.v_borders = [];
         calc.f_borders = [];
         calc.p_borders = [];
         calc.angles    = [];
         calc.maxv.ang  = sing_ang;
-        calc.maxv.v    = max(transpose(sing_unit)*dyn.J_full(:,1)*syn.a1dot_max,-transpose(sing_unit)*dyn.J_full(:,1)*syn.a1dot_max*syn.rev_v_decay) + max(transpose(sing_unit)*dyn.J_full(:,2)*syn.a2dot_max,-transpose(sing_unit)*dyn.J_full(:,2)*syn.a2dot_max*syn.rev_v_decay);
-        calc.maxv.f    = min(subs(sing_fd_taua1_fxfy_sol.sing_fmag,taua1,syn.taua1_max),subs(sing_fd_taua2_fxfy_sol.sing_fmag,taua2,syn.taua2_max));
+        calc.maxv.v    = maxv_d(sing_ang);
+        calc.maxv.f    = maxf_d(sing_ang);
         calc.maxv.p    = calc.maxv.v*calc.maxv.f;
 
         calc.maxf  = calc.maxv;
@@ -56,58 +52,13 @@ function calc = calc_flower (dyn,syn)
         % function for calculating max. force / velocity given the direction in
         % task space (used later for power calculation)
 
-        
-        % syms theta_d % prescribed direction placeholder
-        % unit_d = [cos(theta_d);sin(theta_d)];
-        % 
-        % % for velocity flower (for any given direction theta_d)
-        % unit_q     = inv(dyn.J_full)*unit_d; %q1/q2 required to produce unit_d velocity
-        % 
-        % maxv_case1 = max([syn.a1dot_max/unit_q(1), -syn.rev_v_decay*syn.a1dot_max/unit_q(1)]);
-        % maxv_case2 = max([syn.a2dot_max/unit_q(2), -syn.rev_v_decay*syn.a2dot_max/unit_q(2)]);
-        % maxv_d_syn = subs(min([maxv_case1 ;maxv_case2]),syn); %(symbolic) maximum speed toward given direction
-
         inv_J_full = inv(dyn.J_full);
         
-        % for force flower (interplolate btw. 4 vertices)
-        % force flowers are harder because input tensions cannot be negative! (+have an offset(antagonistic force))
-        % syms maxf_d
-        % syms taua1 taua2
-        % taua = [taua1;taua2];
-        % directed_id_eqn_syn = subs(dyn.id_fxfy_taua,{'fx','fy'},{maxf_d*unit_d(1),maxf_d*unit_d(2)}) == taua;
-        % % directed_fd_eqn_syn = dyn.fd_taua_fxfy == maxf_d*unit_d;
-        % 
-        % if (syn.concept > 0)
-        %     case1max_sol   = solve(subs(directed_id_eqn_syn,taua1,syn.taua1_max),[maxf_d,taua2]);
-        %     case1zero_sol  = solve(subs(directed_id_eqn_syn,taua1,0),[maxf_d,taua2]);
-        %     % since these 2 cases are parallel, one of the maxf_d solutions have to
-        %     % be negative!, therefore it is filtered out by symbolic max.
-        % 
-        %     case2max_sol  = solve(subs(directed_id_eqn_syn,taua2,syn.taua2_max),[maxf_d,taua1]);
-        %     case2zero_sol = solve(subs(directed_id_eqn_syn,taua2,0),[maxf_d,taua1]);
-        % 
-        %     maxf_d_syn = simplify(subs(min([max([case1max_sol.maxf_d,case1zero_sol.maxf_d]),max([case2max_sol.maxf_d,case2zero_sol.maxf_d])]),syn));
-        % 
-        % 
-        % elseif(syn.concept < 0)
-        %     % TODO
-        % end
-
-
         % antagonistic force
-        calc.fant_vec   = double(subs(dyn.fd_taua_fxfy,"taua,[0;0])); %antagonistic force, in task space
+        calc.fant_vec   = dyn.f_ant; %antagonistic force, in task space
     
-        %% [STEP 4] Calculate Plotting Data
-        
-        % Calculate Plot Points!
-    
-        % theta_resoluton = deg2rad(10);
         num_points = 10*4;
         
-        % finger body points
-        joint_points = subs(dyn.forw_joint_pos,syn);
-        calc.plot_points = double([[0;0] joint_points]);
-    
         if(syn.concept > 0)
             v_inputs = border_inputs(syn.a1dot_max,-syn.rev_v_decay * syn.a1dot_max,syn.a2dot_max,-syn.rev_v_decay * syn.a2dot_max,num_points);
             f_inputs = border_inputs(syn.taua1_max,0,syn.taua2_max,0,num_points);
@@ -116,20 +67,9 @@ function calc = calc_flower (dyn,syn)
             f_inputs = border_inputs(syn.taua1_max,-syn.taua1_max,syn.taua2_max,-syn.taua2_max,num_points);
         end
     
+        
         calc.v_borders = dyn.J_full*v_inputs; %resulting border velocities
-    
         calc.f_borders = dyn.fd_A*f_inputs + dyn.fd_b;
-        % calc.f_borders = zeros(2,num_points);
-        % for i = 1:length(f_inputs)
-        %     calc.f_borders(:,i) = double(subs(dyn.fd_taua_fxfy,taua,f_inputs(:,i)));
-        %     if(i == 1 || i == length(f_inputs))
-        %         taux_temp = double(subs(dyn.id_fxfy_taux  ,{"fx","fy"},{calc.f_borders(1,i),calc.f_borders(2,i)}));
-        %         if(taux_temp < 0)
-        %             disp("[CALC][WARNING] Negative taux found at: "+strjoin(string( f_inputs(:,i)) ) );
-        %             calc.warn = true;
-        %         end
-        %     end
-        % end %resulting border forces
     
         calc.p_borders = zeros(2,num_points*2);
         calc.angles    = zeros(1,num_points*2);
@@ -140,11 +80,9 @@ function calc = calc_flower (dyn,syn)
     
         for i_v = 1:num_points
             angle = atan2(calc.v_borders(2,i_v),calc.v_borders(1,i_v));
-            % unit = subs(unit_d,theta_d,angle);
-            unit = [cos(angel);sin(angle)];
+            unit = [cos(angle);sin(angle)];
     
             angle_v = double(norm(calc.v_borders(:,i_v)));
-            % angle_f = double(subs(maxf_d_syn,theta_d,angle));
             angle_f = maxf_d(angle);
     
             angle_p = angle_v*angle_f;
@@ -152,6 +90,7 @@ function calc = calc_flower (dyn,syn)
             calc.p_borders(:,i_v)    = unit*angle_p;
             calc.angles(i_v)         = angle;
             % calc.f_borders(:,i_v+num_points) = unit*angle_f;
+            % calc.f_borders(:,i_v) = unit*angle_f;
     
             if angle_p > calc.maxp.p
                 calc.maxp.p = angle_p;
@@ -171,10 +110,8 @@ function calc = calc_flower (dyn,syn)
 
         for i_f = 1:num_points
             angle = atan2(calc.f_borders(2,i_f),calc.f_borders(1,i_f));
-            % unit = subs(unit_d,theta_d,angle);
             unit = [cos(angle);sin(angle)];
     
-            % angle_v = double(subs(maxv_d_syn,theta_d,angle));
             angle_v = maxv_d(angle);
             angle_f = double(norm(calc.f_borders(:,i_f)));
     
@@ -212,7 +149,8 @@ function calc = calc_flower (dyn,syn)
     for i = 1:length(cats)
         fx = calc.(cats(i)).f * cos(calc.(cats(i)).ang);
         fy = calc.(cats(i)).f * sin(calc.(cats(i)).ang);
-        calc.(cats(i)).tauq = double(subs(dyn.id12_fxfy_tauq,{"fx","fy"},{fx,fy}));
+        % calc.(cats(i)).tauq = double(subs(dyn.id12_fxfy_tauq,{"fx","fy"},{fx,fy}));
+        calc.(cats(i)).tau1 = dyn.id12_A*[fx;fy] + dyn.id12_b;
         calc.(cats(i)).taux = double(subs(dyn.id_fxfy_taux  ,{"fx","fy"},{fx,fy}));
         %TODO: deduce qdot / adot
         
@@ -226,39 +164,34 @@ function calc = calc_flower (dyn,syn)
     function maxv = maxv_d(ang)
         unit_d = [cos(ang);sin(ang)];
         unit_adot = inv_J_full*unit_d; % adot required to produce unit_d velocity
-        case1 = syn.a1dot_max/unit_adot(1);
-        if case1 < 0
-            case1 = -case1*syn.rev_v_decay;
-        end
-        case2 = syn.a2dot_max/unit_adot(2);
-        if case2 < 0
-            case2 = -case2*syn.rev_v_decay;
-        end
+
+        case1 = max(adot_max(1)/unit_adot(1),adot_min(1)/unit_adot(1));
+        case2 = max(adot_max(2)/unit_adot(2),adot_min(2)/unit_adot(2));
+
         maxv = min(case1,case2);
+        
+        if maxv < 0
+            disp("[WARN] NEGATIVE maxv_d value!");
+        end
+
     end
 
     function maxf = maxf_d(ang)
         unit_d = [cos(ang);sin(ang)];
         % taua = id_A * f  + b, where f = maxf*unit_d
-        % taua = maxf * (id_A*unit_d) + b
+        % taua = maxf * (id_A*unit_d) + b 
+        %TODO: this returns erroneous
+        % values in negative situations!!! (BOOKMARK)
         id_A_d = dyn.id_A*unit_d;
-        if id_A_d(1) < 0
-            case1 = -b(1)/id_A_d(1);
-        else
-            case1 = (syn.taua1_max - b(1))/id_A_d(1);
-        end
 
-        if id_A_d(2) < 0 %TODO: also calculate differently for case2
-            case2 = -b(2)/id_A_d(1);
-        else
-            case2 = (syn.taua2_max - b(2))/id_A_d(2);
-        end
-
-        if(case1 < 0 || case2 < 0)
-            disp("[CALC][WARN] Negative maxf value!")
-        end
+        case1 = max((taua_min(1) - dyn.id_b(1))/id_A_d(1),(taua_max(1) - dyn.id_b(1))/id_A_d(1));
+        case2 = max((taua_min(2) - dyn.id_b(2))/id_A_d(2),(taua_max(2) - dyn.id_b(2))/id_A_d(2));
         
         maxf = min(case1,case2);
+
+        if maxf < 0
+            disp("[WARN] NEGATIVE maxf_d value!");
+        end
     end
 
 end
