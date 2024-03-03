@@ -11,6 +11,12 @@ end
 %% generate ui
 ui = struct();
 
+ui.concept_enum = struct();
+ui.concept_enum.("B_op")   =  1;
+ui.concept_enum.("C_op")   =  2;
+ui.concept_enum.("B_cl")   = -1;
+ui.concept_enum.("C_cl")   = -2;
+
 ui.fig = uifigure('Name', 'Finger Dynamics GUI','Position',[150 100 1600 900]);
 ui.g_fig   = uigridlayout(ui.fig);
 ui.g_fig.RowHeight = {'16x','2x','1x','1x'};
@@ -87,12 +93,13 @@ ui.g_discr.ColumnSpacing = 0;
 ui.discr = struct();
 
 % concept selector (TODO make this better)
-ui.discr.concept = uidropdown(ui.g_discr,"Items",["B+","C+"],"ValueChangedFcn",@(src,event)updatesyn(src,event,"concept"));
-if(syn.concept == 1)
-    ui.discr.concept.Value = "B+";
-else
-    ui.discr.concept.Value = "C+";
-end
+ui.discr.concept = uidropdown(ui.g_discr,"Items",string(fieldnames(ui.concept_enum)),"ValueChangedFcn",@(src,event)updatesyn(src,event,"concept"));
+ui.discr.concept.Value = "B_op";
+% if(syn.concept == 1)
+%     ui.discr.concept.Value = "B+";
+% else
+%     ui.discr.concept.Value = "C+";
+% end
 ui.discr.concept.Layout.Row = 1;
 ui.discr.concept.Layout.Column = 2;
 ui.discr.concept_lbl = uilabel(ui.g_discr);
@@ -164,6 +171,7 @@ updatesol(0,0);
 % save_data(ui,syn,calcs,style,pts,input_mode);
 % tendon_dyn_numeric(syn,pts(1,:),input_mode);
 % get full dynamics from input positions
+refresh_ui(ui,syn,pts,style);
 function dyns = get_dyns(syn,pts,input_mode)
     dyns = [];
     for i = 1:length(pts(1,:))
@@ -270,17 +278,45 @@ function save_data(ui,syn,calcs,style,pts,input_mode)
     fclose(f_readouts);
 end
 
+function refresh_ui(ui,syn,pts,style)
+    % INPUT UI
+    % sync slider values to syn
+    ui_syn_names = string(fieldnames(ui.syn));
+    for i = 1:length(ui_syn_names)
+        ui.syn.(ui_syn_names(i)).Value = syn.(ui_syn_names(i));
+    end
+
+    % sync concept dropdown to syn
+    ui_concept_names = string(fieldnames(ui.concept_enum));
+    for i = 1:length(ui_concept_names)
+        if ui.concept_enum.(ui_concept_names(i)) == syn.concept
+            ui.discr.concept.Value = ui_concept_names(i);
+        end
+    end
+
+    % show the setup again
+    show_setup(ui.ax_setup,syn,style);
+
+    % OUTPUT UI (TODO)
+    % sync number of input points and number of panels (TODO)    
+
+    % sync visibility checkboxes to style(TODO)
+   
+    % draw the flower / write calcs again
+    % evalin('base','show_flowers(ui.ax_plot,calcs,style);');
+end
+
 %% callback function(s)
 function updatesyn(~,event,name)
     if name == "null"
         % do nothing
     elseif name == "concept"
-        if event.Value(1) == "B"
-            evalin('base',"syn.concept = 1;");
-        else
-            evalin('base',"syn.concept = 2;");
-        end
-
+        evalin('base',sprintf("syn.concept = ui.concept_enum.%s;",event.Value));
+        % if event.Value(1) == "B"
+        %     evalin('base',"syn.concept = 1;");
+        % else
+        %     evalin('base',"syn.concept = 2;");
+        % end
     else
         evalin('base',sprintf("syn.%s = %f;",name,event.Value));
         % disp(action);
@@ -309,4 +345,8 @@ end
 
 function uisave(~,~)
     evalin('base','save_data(ui,syn,calcs,style,pts,input_mode);');
+end
+
+function uirefresh(~,~)
+    
 end
