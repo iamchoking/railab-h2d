@@ -79,8 +79,11 @@ function show_setup(ax_setup,syn,style)
             % r1m to r1p (concept C)
             plot(ax_setup,[-start_r1mp(1) -end_r1mp(1)],[start_r1mp(2) end_r1mp(2)],'Color','blue','Marker','o');
             % arc in r1p (C)
-            % beta_r1pd = asin((syn.r1p-syn.r1d)/syn.l2);
-            % plot_circle(ax_setup,p_center,syn.r1p,'blue','-',[-2*pi-beta_r1mp beta_r1pd]);
+            beta_r1pd = asin((syn.r1p-syn.r1d)/syn.l2);
+            plot_circle(ax_setup,p_center,syn.r1p,'blue','-',[-2*pi-beta_r1mp beta_r1pd]);
+            % motor characteristics
+            text(ax_setup,-syn.r1m,style.setup_lim(2,1)/3*2,sprintf("  {\\tau}_{max} = %.3f mNm  \n  \\omega_{max} = %.3f s^{-1}  \n  l = %.2f mm/rev  \n  (T_{max}: %.3f N)  ",syn.taua1_max*1000,syn.a1dot_max,syn.lead1*1000,syn.taua1_max*(2*pi/syn.lead1)*syn.eff1),"HorizontalAlignment","right","Color","blue");
+
         end
     end
     
@@ -95,16 +98,6 @@ function show_setup(ax_setup,syn,style)
     % fixture
     scatter(ax_setup,[0],[d_center(2)+syn.r1d],100,'blue','Marker','X','LineWidth',2)
     
-    if syn.concept < 0
-        % r1p to r1d (both concepts)
-        start_r1pd = p_center+syn.r1p * [cos(beta_r1pd);sin(beta_r1pd)];
-        end_r1pd   = d_center+syn.r1d * [cos(beta_r1pd);sin(beta_r1pd)];
-        plot(ax_setup,[-start_r1pd(1) -end_r1pd(1)],[start_r1pd(2) end_r1pd(2)],'Color','blue','Marker','o');
-        
-        % arc in r1d (both)
-        plot_circle(ax_setup,d_center,syn.r1d,'blue','-',[pi/2 pi-beta_r1pd]);
-    end
-
     % [STRING 2] (red)
     plot_circle(ax_setup,m_center,syn.r2m,'red',':');
     text(ax_setup,-syn.r2m,0,'r2m: '+string(syn.r2m*1e3) + 'mm \rightarrow','Color','red','HorizontalAlignment','right');
@@ -118,12 +111,6 @@ function show_setup(ax_setup,syn,style)
     % motor characteristics
     text(ax_setup,syn.r2m,style.setup_lim(2,1)/3*2,sprintf("  {\\tau}_{max} = %.3f mNm  \n  \\omega_{max} = %.3f s^{-1}  \n  l = %.2f mm/rev  \n  (T_{max}: %.3f N)  ",syn.taua2_max*1000,syn.a2dot_max,syn.lead2*1000,syn.taua2_max*(2*pi/syn.lead2)*syn.eff2),"HorizontalAlignment","left","Color","red");
 
-    if syn.concept < 0
-        % ground to r1m
-        plot(ax_setup,[-syn.r2m -syn.r2m],[0 style.setup_lim(2,1)],'Color','red','Marker','o');
-        % r1m arc
-        plot_circle(ax_setup,m_center,syn.r2m,'red','-',[pi,pi/2]);
-    end
 
     % [STRING X] (black)
     plot_circle(ax_setup,p_center,syn.rxp,'black',':');

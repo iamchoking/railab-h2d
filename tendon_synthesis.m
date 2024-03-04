@@ -11,11 +11,11 @@ end
 %% generate ui
 ui = struct();
 
-ui.concept_enum = struct();
-ui.concept_enum.("B_op")   =  1;
-ui.concept_enum.("C_op")   =  2;
-ui.concept_enum.("B_cl")   = -1;
-ui.concept_enum.("C_cl")   = -2;
+ui.concept_struct = struct();
+ui.concept_struct.("B_op")   =  1;
+ui.concept_struct.("C_op")   =  2;
+ui.concept_struct.("B_cl")   = -1;
+ui.concept_struct.("C_cl")   = -2;
 
 ui.fig = uifigure('Name', 'Finger Dynamics GUI','Position',[150 100 1600 900]);
 ui.g_fig   = uigridlayout(ui.fig);
@@ -81,7 +81,7 @@ end
 % ui: discrete variables
 ui.p_discr = uipanel(ui.g_fig,'Title','Discrete Param.');
 ui.p_discr.Scrollable = 'on';
-ui.p_discr.Layout.Row = [2 3];
+ui.p_discr.Layout.Row = 2;
 ui.p_discr.Layout.Column = 2;
 ui.g_discr = uigridlayout(ui.p_discr);
 ui.g_discr.RowHeight = {35,35,35,35,35,35};
@@ -93,7 +93,7 @@ ui.g_discr.ColumnSpacing = 0;
 ui.discr = struct();
 
 % concept selector (TODO make this better)
-ui.discr.concept = uidropdown(ui.g_discr,"Items",string(fieldnames(ui.concept_enum)),"ValueChangedFcn",@(src,event)updatesyn(src,event,"concept"));
+ui.discr.concept = uidropdown(ui.g_discr,"Items",string(fieldnames(ui.concept_struct)),"ValueChangedFcn",@(src,event)updatesyn(src,event,"concept"));
 ui.discr.concept.Value = "B_op";
 % if(syn.concept == 1)
 %     ui.discr.concept.Value = "B+";
@@ -106,6 +106,11 @@ ui.discr.concept_lbl = uilabel(ui.g_discr);
 ui.discr.concept_lbl.Text = "CONCEPT";
 ui.discr.concept_lbl.Layout.Row = 1;
 ui.discr.concept_lbl.Layout.Column = 1;
+
+% REFRESH UI (button)
+ui.solve = uibutton(ui.g_fig,"Text","Refresh","ButtonPushedFcn",@uirefresh);
+ui.solve.Layout.Row = 3;
+ui.solve.Layout.Column = 2;
 
 % SOLVE (button)
 ui.solve = uibutton(ui.g_fig,"Text","Solve >>","ButtonPushedFcn",@updatesol);
@@ -172,6 +177,18 @@ updatesol(0,0);
 % tendon_dyn_numeric(syn,pts(1,:),input_mode);
 % get full dynamics from input positions
 refresh_ui(ui,syn,pts,style);
+
+function s = concept_name(concept_struct,num)
+    s = "NULL";
+    % disp(concept_struct)
+    names = string(fieldnames(concept_struct));
+    for i = 1:length(names)
+        if concept_struct.(names(i)) == num
+            s = names(i);
+        end
+    end
+end
+
 function dyns = get_dyns(syn,pts,input_mode)
     dyns = [];
     for i = 1:length(pts(1,:))
@@ -248,7 +265,7 @@ end
 % Save Data
 function save_data(ui,syn,calcs,style,pts,input_mode)
     nowstr = datestr(now,'yyyy-mm-dd_HH-MM-SS');
-    dir_string = "./figures/"+nowstr;
+    dir_string = "./figures/"+concept_name(ui.concept_struct,syn.concept)+"/"+nowstr;
     mkdir(dir_string);
     disp("[SAVE] Saving data to " + dir_string);
     % photos
@@ -287,12 +304,13 @@ function refresh_ui(ui,syn,pts,style)
     end
 
     % sync concept dropdown to syn
-    ui_concept_names = string(fieldnames(ui.concept_enum));
-    for i = 1:length(ui_concept_names)
-        if ui.concept_enum.(ui_concept_names(i)) == syn.concept
-            ui.discr.concept.Value = ui_concept_names(i);
-        end
-    end
+    ui.discr.concept.Value = concept_name(ui.concept_struct,syn.concept);
+    % ui_concept_names = string(fieldnames(ui.concept_struct));
+    % for i = 1:length(ui_concept_names)
+    %     if ui.concept_struct.(ui_concept_names(i)) == syn.concept
+    %         ui.discr.concept.Value = ui_concept_names(i);
+    %     end
+    % end
 
     % show the setup again
     show_setup(ui.ax_setup,syn,style);
@@ -304,6 +322,8 @@ function refresh_ui(ui,syn,pts,style)
    
     % draw the flower / write calcs again
     % evalin('base','show_flowers(ui.ax_plot,calcs,style);');
+
+    disp("[UI-REFRESH] Refresehed UI to current syn")
 end
 
 %% callback function(s)
@@ -311,7 +331,7 @@ function updatesyn(~,event,name)
     if name == "null"
         % do nothing
     elseif name == "concept"
-        evalin('base',sprintf("syn.concept = ui.concept_enum.%s;",event.Value));
+        evalin('base',sprintf("syn.concept = ui.concept_struct.%s;",event.Value));
         % if event.Value(1) == "B"
         %     evalin('base',"syn.concept = 1;");
         % else
@@ -348,5 +368,5 @@ function uisave(~,~)
 end
 
 function uirefresh(~,~)
-    
+    evalin('base','refresh_ui(ui,syn,pts,style)')
 end
