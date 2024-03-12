@@ -2,7 +2,7 @@
 %% Designating variables (must be a initialized in variable "syn")
 var_names   = ["r1m"    "r1p"   "r1d"   "r2m"   "taua1_max" "taua2_max" "rym" "ryp" "Tyi" "ky"  "rxd"];
 var_min     = [5*1e-3   5*1e-3  5*1e-3  5*1e-3  5*1e-3      5*1e-3      5e-3   5e-3  0.1   18   5e-3];
-var_max     = [15*1e-3  13*1e-3 10*1e-3 15*1e-3  10e-3       10e-3      15e-3  13e-3 50    2000 15e-3];
+var_max     = [15*1e-3  13*1e-3 10*1e-3 15*1e-3  10e-3       10e-3      15e-3  13e-3 50    4500 15e-3];
 var_default = zeros(1,length(var_names));
 for i = 1:length(var_names)
      var_default(i) = syn.(var_names(i));
